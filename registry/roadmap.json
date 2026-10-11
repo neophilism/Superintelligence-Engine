@@ -186,7 +186,9 @@
         "Load a signed sample domain tool with correct anchors and operation schema.",
         "Reject incompatible plugin versions and invalid/unauthorized operations."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        5
+      ]
     },
     {
       "id": "SIE-010",
