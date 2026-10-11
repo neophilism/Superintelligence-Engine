@@ -11,7 +11,7 @@ test('PostgreSQL migration, foreign keys and forced RLS', {skip:!url?'requires T
   const project=await client.query("INSERT INTO projects(tenant_id,owner_id,title,kind) VALUES($1,$2,'Test Project','code') RETURNING id",[tenant.rows[0].id,uid.rows[0].id]);
   const other=await client.query("INSERT INTO tenants(name) VALUES('Foreign tenant') RETURNING id");
   await assert.rejects(client.query("INSERT INTO asset_metadata(tenant_id,project_id,storage_key,media_type,sha256,size_bytes) VALUES($1,$2,'x','text/plain',$3,1)",[other.rows[0].id,project.rows[0].id,'a'.repeat(64)]),/asset_same_tenant_project|foreign key/i);
-  const rls=await client.query("SELECT tablename,rowsecurity,forcerowsecurity FROM pg_tables WHERE schemaname='public' AND tablename IN ('tenants','identities','memberships','projects','asset_metadata')");
+  const rls=await client.query("SELECT c.relname AS tablename,c.relrowsecurity AS rowsecurity,c.relforcerowsecurity AS forcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname IN ('tenants','identities','memberships','projects','asset_metadata')");
   assert.equal(rls.rows.length,5);for(const row of rls.rows){assert.equal(row.rowsecurity,true);assert.equal(row.forcerowsecurity,true);}
   const policies=await client.query("SELECT * FROM pg_policies WHERE schemaname='public'");assert.equal(policies.rows.length,0);
  } finally {await client.end();}
