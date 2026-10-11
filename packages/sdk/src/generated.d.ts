@@ -25,15 +25,15 @@ export class GeneratedEngineClient extends EngineClient {
   listCapabilities(options?: {signal?: AbortSignal}): Promise<CapabilitiesResponse>;
   listProjects(options?: {signal?: AbortSignal}): Promise<ProjectList>;
   createProject(body: ProjectCreate, options?: {signal?: AbortSignal}): Promise<Project>;
-  getProject(params: {projectId: string}, options?: {signal?: AbortSignal}): Promise<Project>;
-  listArtifacts(params: {projectId: string}, options?: {signal?: AbortSignal}): Promise<ArtifactList>;
-  createArtifact(params: {projectId: string}, body: ArtifactCreate, options?: {signal?: AbortSignal}): Promise<Artifact>;
+  getProject(params: {"projectId": string}, options?: {signal?: AbortSignal}): Promise<Project>;
+  listArtifacts(params: {"projectId": string}, options?: {signal?: AbortSignal}): Promise<ArtifactList>;
+  createArtifact(params: {"projectId": string}, body: ArtifactCreate, options?: {signal?: AbortSignal}): Promise<Artifact>;
   listWorkflows(options?: {signal?: AbortSignal}): Promise<WorkflowList>;
   createWorkflow(body: WorkflowCreate, options?: {signal?: AbortSignal}): Promise<Workflow>;
   createRun(body: RunCreate, options?: {signal?: AbortSignal}): Promise<Run>;
-  getRun(params: {runId: string}, options?: {signal?: AbortSignal}): Promise<Run>;
-  getApproval(params: {approvalId: string}, options?: {signal?: AbortSignal}): Promise<Approval>;
-  decideApproval(params: {approvalId: string}, body: ApprovalDecision, options?: {signal?: AbortSignal}): Promise<Approval>;
+  getRun(params: {"runId": string}, options?: {signal?: AbortSignal}): Promise<Run>;
+  getApproval(params: {"approvalId": string}, options?: {signal?: AbortSignal}): Promise<Approval>;
+  decideApproval(params: {"approvalId": string}, body: ApprovalDecision, options?: {signal?: AbortSignal}): Promise<Approval>;
   getUsage(options?: {signal?: AbortSignal}): Promise<Usage>;
-  listModels(options?: {signal?: AbortSignal}): Promise<ModelCatalogResponse>;
+  listModels(query?: {"capability"?: string; "region"?: string; "usage"?: "personal" | "commercial"}, options?: {signal?: AbortSignal}): Promise<ModelCatalogResponse>;
 }
