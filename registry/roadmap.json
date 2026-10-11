@@ -41,7 +41,9 @@
         "Contract snapshot detects breaking changes.",
         "Generated client calls a mocked API and rejects malformed data."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        2
+      ]
     },
     {
       "id": "SIE-003",
@@ -100,7 +102,9 @@
         "Migrate an empty database and a fixture with existing records.",
         "Restore backup into isolated environment and verify records and schema."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        4
+      ]
     },
     {
       "id": "SIE-006",
@@ -160,7 +164,9 @@
         "Both thin example apps render the same domain component with different tokens.",
         "Keyboard navigation and package version compatibility checks pass."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        3
+      ]
     },
     {
       "id": "SIE-009",
