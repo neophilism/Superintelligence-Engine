@@ -20,7 +20,9 @@
         "A fresh checkout installs and passes CI without secrets.",
         "An intentionally failing test blocks merge and package publication."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        1
+      ]
     },
     {
       "id": "SIE-002",
