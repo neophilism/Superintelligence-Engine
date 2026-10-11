@@ -208,7 +208,9 @@
         "Unsupported or mislicensed model is never returned as available for that job.",
         "Provider outage and unknown price are represented distinctly from healthy/known-priced."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        6
+      ]
     },
     {
       "id": "SIE-011",
