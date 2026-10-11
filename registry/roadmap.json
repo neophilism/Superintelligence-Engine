@@ -85,7 +85,9 @@
         "Cross-tenant CRUD and artifact-link access are denied in API and SQL tests.",
         "Role revocation immediately blocks previously allowed actions."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        9
+      ]
     },
     {
       "id": "SIE-005",
