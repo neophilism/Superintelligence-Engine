@@ -63,7 +63,9 @@
         "Two mock apps use one identity while retaining audience-scoped sessions.",
         "Session fixation, CSRF, expired-token and cross-app audience misuse tests fail closed."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        8
+      ]
     },
     {
       "id": "SIE-004",
