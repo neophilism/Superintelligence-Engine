@@ -21,6 +21,10 @@
     "generate:check": "node scripts/generate-sdk.mjs --check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "npm run check && npm run typecheck",
-    "release:dry-run": "npm pack --dry-run --json"
+    "release:dry-run": "npm pack --dry-run --json",
+    "db:migrate": "node scripts/migrate.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
   }
 }
