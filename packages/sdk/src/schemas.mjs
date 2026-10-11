@@ -157,6 +157,19 @@ export const SCHEMAS = {
         "items": {
           "type": "string"
         }
+      },
+      "title": {
+        "type": "string"
+      },
+      "body": {},
+      "assetId": {
+        "type": "string"
+      },
+      "rights": {
+        "type": "object"
+      },
+      "provenance": {
+        "type": "object"
       }
     }
   },
@@ -454,6 +467,97 @@ export const SCHEMAS = {
         "items": {
           "$ref": "#/components/schemas/ModelRecord"
         }
+      }
+    }
+  },
+  "ArtifactRevisionRequest": {
+    "type": "object",
+    "required": [
+      "expectedRevision",
+      "mediaType",
+      "checksum"
+    ],
+    "properties": {
+      "expectedRevision": {
+        "type": "integer"
+      },
+      "mediaType": {
+        "type": "string"
+      },
+      "checksum": {
+        "type": "string"
+      },
+      "body": {},
+      "assetId": {
+        "type": "string"
+      },
+      "rights": {
+        "type": "object"
+      },
+      "provenance": {
+        "type": "object"
+      }
+    }
+  },
+  "ArtifactRestoreRequest": {
+    "type": "object",
+    "required": [
+      "expectedRevision",
+      "targetRevision"
+    ],
+    "properties": {
+      "expectedRevision": {
+        "type": "integer"
+      },
+      "targetRevision": {
+        "type": "integer"
+      }
+    }
+  },
+  "ArtifactHistory": {
+    "type": "object",
+    "required": [
+      "items"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        }
+      }
+    }
+  },
+  "ProjectExport": {
+    "type": "object",
+    "required": [
+      "schemaVersion",
+      "project",
+      "artifacts",
+      "sha256",
+      "binaryAssetsEmbedded"
+    ],
+    "properties": {
+      "schemaVersion": {
+        "type": "integer"
+      },
+      "project": {
+        "$ref": "#/components/schemas/Project"
+      },
+      "artifacts": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        }
+      },
+      "sha256": {
+        "type": "string"
+      },
+      "binaryAssetsEmbedded": {
+        "type": "boolean"
+      },
+      "exportedAt": {
+        "type": "string"
       }
     }
   }

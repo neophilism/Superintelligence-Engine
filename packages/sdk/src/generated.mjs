@@ -17,4 +17,8 @@ export class GeneratedEngineClient extends EngineClient {
   decideApproval(params, body, options={}) {return this.requestValidated("POST",("/v1/approvals/{approvalId}/decision").replace("{approvalId}", encodeURIComponent(params["approvalId"])),body,"Approval",options.signal);}
   getUsage(options={}) {return this.requestValidated("GET","/v1/usage",undefined,"Usage",options.signal);}
   listModels(query, options={}) {return this.requestValidated("GET",("/v1/models"+encodeQuery(["capability","region","usage"],query)),undefined,"ModelCatalogResponse",options.signal);}
+  reviseArtifact(params, body, options={}) {return this.requestValidated("POST",(("/v1/projects/{projectId}/artifacts/{artifactId}/revisions").replace("{projectId}", encodeURIComponent(params["projectId"]))).replace("{artifactId}", encodeURIComponent(params["artifactId"])),body,"Artifact",options.signal);}
+  getArtifactHistory(params, options={}) {return this.requestValidated("GET",(("/v1/projects/{projectId}/artifacts/{artifactId}/revisions").replace("{projectId}", encodeURIComponent(params["projectId"]))).replace("{artifactId}", encodeURIComponent(params["artifactId"])),undefined,"ArtifactHistory",options.signal);}
+  restoreArtifact(params, body, options={}) {return this.requestValidated("POST",(("/v1/projects/{projectId}/artifacts/{artifactId}/restore").replace("{projectId}", encodeURIComponent(params["projectId"]))).replace("{artifactId}", encodeURIComponent(params["artifactId"])),body,"Artifact",options.signal);}
+  exportProject(params, options={}) {return this.requestValidated("GET",("/v1/projects/{projectId}/export").replace("{projectId}", encodeURIComponent(params["projectId"])),undefined,"ProjectExport",options.signal);}
 }

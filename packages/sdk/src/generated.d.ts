@@ -7,7 +7,7 @@ export type Provider = { "id": string; "model": string; "capabilities": Array<st
 export type ProjectCreate = { "title": string; "kind": string; };
 export type Project = { "id": string; "title": string; "kind": string; "revision": number; };
 export type ProjectList = { "items": Array<Project>; };
-export type ArtifactCreate = { "mediaType": string; "checksum": string; "parents"?: Array<string>; };
+export type ArtifactCreate = { "mediaType": string; "checksum": string; "parents"?: Array<string>; "title"?: string; "body"?: unknown; "assetId"?: string; "rights"?: Record<string, unknown>; "provenance"?: Record<string, unknown>; };
 export type Artifact = { "id": string; "projectId": string; "mediaType": string; "checksum": string; "revision": number; };
 export type ArtifactList = { "items": Array<Artifact>; };
 export type WorkflowCreate = { "name": string; "nodes": Array<Record<string, unknown>>; };
@@ -20,6 +20,10 @@ export type Approval = { "id": string; "status": "pending" | "approved" | "denie
 export type Usage = { "spentMicrounits": number; "reservedMicrounits": number; "currency": string; };
 export type ModelRecord = { "id": string; "provider": string; "model": string; "revision": string; "operations": Array<string>; "modalities": Array<string>; "regions": Array<string>; "licenseScope": "none" | "personal" | "commercial"; "priceStatus": "known" | "unknown"; "healthStatus": "healthy" | "degraded" | "outage" | "unknown"; "available": boolean; "reasons": Array<string>; };
 export type ModelCatalogResponse = { "items": Array<ModelRecord>; };
+export type ArtifactRevisionRequest = { "expectedRevision": number; "mediaType": string; "checksum": string; "body"?: unknown; "assetId"?: string; "rights"?: Record<string, unknown>; "provenance"?: Record<string, unknown>; };
+export type ArtifactRestoreRequest = { "expectedRevision": number; "targetRevision": number; };
+export type ArtifactHistory = { "items": Array<Record<string, unknown>>; };
+export type ProjectExport = { "schemaVersion": number; "project": Project; "artifacts": Array<Record<string, unknown>>; "sha256": string; "binaryAssetsEmbedded": boolean; "exportedAt"?: string; };
 export class GeneratedEngineClient extends EngineClient {
   getHealth(options?: {signal?: AbortSignal}): Promise<HealthResponse>;
   listCapabilities(options?: {signal?: AbortSignal}): Promise<CapabilitiesResponse>;
@@ -36,4 +40,8 @@ export class GeneratedEngineClient extends EngineClient {
   decideApproval(params: {"approvalId": string}, body: ApprovalDecision, options?: {signal?: AbortSignal}): Promise<Approval>;
   getUsage(options?: {signal?: AbortSignal}): Promise<Usage>;
   listModels(query?: {"capability"?: string; "region"?: string; "usage"?: "personal" | "commercial"}, options?: {signal?: AbortSignal}): Promise<ModelCatalogResponse>;
+  reviseArtifact(params: {"projectId": string; "artifactId": string}, body: ArtifactRevisionRequest, options?: {signal?: AbortSignal}): Promise<Artifact>;
+  getArtifactHistory(params: {"projectId": string; "artifactId": string}, options?: {signal?: AbortSignal}): Promise<ArtifactHistory>;
+  restoreArtifact(params: {"projectId": string; "artifactId": string}, body: ArtifactRestoreRequest, options?: {signal?: AbortSignal}): Promise<Artifact>;
+  exportProject(params: {"projectId": string}, options?: {signal?: AbortSignal}): Promise<ProjectExport>;
 }
