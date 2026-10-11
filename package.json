@@ -1,0 +1,20 @@
+{
+  "name": "superintelligence-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check apps/api/src/server.mjs && node --check apps/worker/src/worker.mjs && node --check packages/core/src/index.mjs && node --check packages/sdk/src/index.mjs",
+    "lint": "npm run check",
+    "build": "npm run check",
+    "release:dry-run": "npm pack --dry-run --json"
+  }
+}
