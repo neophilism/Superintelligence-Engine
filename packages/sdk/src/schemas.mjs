@@ -360,5 +360,101 @@ export const SCHEMAS = {
         "type": "string"
       }
     }
+  },
+  "ModelRecord": {
+    "type": "object",
+    "required": [
+      "id",
+      "provider",
+      "model",
+      "revision",
+      "operations",
+      "modalities",
+      "regions",
+      "licenseScope",
+      "priceStatus",
+      "healthStatus",
+      "available",
+      "reasons"
+    ],
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "provider": {
+        "type": "string"
+      },
+      "model": {
+        "type": "string"
+      },
+      "revision": {
+        "type": "string"
+      },
+      "operations": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "modalities": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "regions": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "licenseScope": {
+        "type": "string",
+        "enum": [
+          "none",
+          "personal",
+          "commercial"
+        ]
+      },
+      "priceStatus": {
+        "type": "string",
+        "enum": [
+          "known",
+          "unknown"
+        ]
+      },
+      "healthStatus": {
+        "type": "string",
+        "enum": [
+          "healthy",
+          "degraded",
+          "outage",
+          "unknown"
+        ]
+      },
+      "available": {
+        "type": "boolean"
+      },
+      "reasons": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "ModelCatalogResponse": {
+    "type": "object",
+    "required": [
+      "items"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ModelRecord"
+        }
+      }
+    }
   }
 };

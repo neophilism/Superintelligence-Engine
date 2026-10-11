@@ -18,19 +18,22 @@ export type Run = { "id": string; "status": "pending" | "running" | "paused" | "
 export type ApprovalDecision = { "decision": "approve" | "deny"; };
 export type Approval = { "id": string; "status": "pending" | "approved" | "denied" | "expired"; "action": string; };
 export type Usage = { "spentMicrounits": number; "reservedMicrounits": number; "currency": string; };
+export type ModelRecord = { "id": string; "provider": string; "model": string; "revision": string; "operations": Array<string>; "modalities": Array<string>; "regions": Array<string>; "licenseScope": "none" | "personal" | "commercial"; "priceStatus": "known" | "unknown"; "healthStatus": "healthy" | "degraded" | "outage" | "unknown"; "available": boolean; "reasons": Array<string>; };
+export type ModelCatalogResponse = { "items": Array<ModelRecord>; };
 export class GeneratedEngineClient extends EngineClient {
   getHealth(options?: {signal?: AbortSignal}): Promise<HealthResponse>;
   listCapabilities(options?: {signal?: AbortSignal}): Promise<CapabilitiesResponse>;
   listProjects(options?: {signal?: AbortSignal}): Promise<ProjectList>;
   createProject(body: ProjectCreate, options?: {signal?: AbortSignal}): Promise<Project>;
-  getProject(params: {projectId: string}, options?: {signal?: AbortSignal}): Promise<Project>;
-  listArtifacts(params: {projectId: string}, options?: {signal?: AbortSignal}): Promise<ArtifactList>;
-  createArtifact(params: {projectId: string}, body: ArtifactCreate, options?: {signal?: AbortSignal}): Promise<Artifact>;
+  getProject(params: {"projectId": string}, options?: {signal?: AbortSignal}): Promise<Project>;
+  listArtifacts(params: {"projectId": string}, options?: {signal?: AbortSignal}): Promise<ArtifactList>;
+  createArtifact(params: {"projectId": string}, body: ArtifactCreate, options?: {signal?: AbortSignal}): Promise<Artifact>;
   listWorkflows(options?: {signal?: AbortSignal}): Promise<WorkflowList>;
   createWorkflow(body: WorkflowCreate, options?: {signal?: AbortSignal}): Promise<Workflow>;
   createRun(body: RunCreate, options?: {signal?: AbortSignal}): Promise<Run>;
-  getRun(params: {runId: string}, options?: {signal?: AbortSignal}): Promise<Run>;
-  getApproval(params: {approvalId: string}, options?: {signal?: AbortSignal}): Promise<Approval>;
-  decideApproval(params: {approvalId: string}, body: ApprovalDecision, options?: {signal?: AbortSignal}): Promise<Approval>;
+  getRun(params: {"runId": string}, options?: {signal?: AbortSignal}): Promise<Run>;
+  getApproval(params: {"approvalId": string}, options?: {signal?: AbortSignal}): Promise<Approval>;
+  decideApproval(params: {"approvalId": string}, body: ApprovalDecision, options?: {signal?: AbortSignal}): Promise<Approval>;
   getUsage(options?: {signal?: AbortSignal}): Promise<Usage>;
+  listModels(query?: {"capability"?: string; "region"?: string; "usage"?: "personal" | "commercial"}, options?: {signal?: AbortSignal}): Promise<ModelCatalogResponse>;
 }
