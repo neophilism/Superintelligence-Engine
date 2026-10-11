@@ -1,0 +1,2 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {OIDCDriver,AuthBroker} from '../src/index.mjs';
+test('OIDC provider configuration refuses HTTP issuer and missing encryption secret',()=>{assert.throws(()=>new OIDCDriver({issuer:'http://identity.local',clients:{}}),/HTTPS/);assert.throws(()=>new AuthBroker({pool:{query:()=>{}},driver:{},encryptionKeyHex:'abc'}),/32 bytes/);});

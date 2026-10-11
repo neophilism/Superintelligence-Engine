@@ -1,0 +1,7 @@
+# SIE-003 OIDC SSO service
+
+A central OIDC issuer with two distinct relying-party configurations (`academy`, `command`) provides shared identities while preserving audience-specific sessions. Login uses authorization-code + PKCE, nonce and state; browser-bound HttpOnly Secure SameSite=Lax one-use flow cookies; encrypted PKCE verifier and nonce at rest; short-lived flows; hashed opaque session tokens; replay rejection and revocation. The OpenID library validates issuer, redirect and ID token claims. No IdP secrets are ever returned to clients.
+
+Required server secrets: `OIDC_ISSUER`, `OIDC_ACADEMY_CLIENT_ID`, `OIDC_ACADEMY_CLIENT_SECRET`, `OIDC_ACADEMY_REDIRECT_URI`, `OIDC_COMMAND_CLIENT_ID`, `OIDC_COMMAND_CLIENT_SECRET`, `OIDC_COMMAND_REDIRECT_URI`, `SESSION_ENCRYPTION_KEY_HEX`, `AUTH_DATABASE_URL`, `ACADEMY_RETURN_URL`, `COMMAND_RETURN_URL`. Values must be configured only for authorized hosted origins. Product return URLs must be HTTPS and static configuration, never a user-provided redirect query. IdP discovery/real end-to-end SSO remains unverified until a real identity tenant and product domains exist. `GET /auth/{product}/session` returns only an identity reference, not tokens or privileged tenant access. SIE-004 must enforce tenant permissions on subsequent APIs.
+
+The database integration suite exercises actual replay, browser-state mismatch, cross-product session isolation, logout and revoke-all using a deterministic local OIDC driver; it does not pretend an external IdP was contacted.
