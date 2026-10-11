@@ -7,6 +7,7 @@ export function toolAnchor(domain,controlId){
   return domain+'.'+controlId;
 }
 export function validateControls(domain,controls){
+  if(!WORKSPACE_DOMAINS.includes(domain))throw new TypeError('Unknown workspace domain');
   if(!Array.isArray(controls))throw new TypeError('Controls must be an array');
   const anchors=new Set();
   for(const c of controls){
