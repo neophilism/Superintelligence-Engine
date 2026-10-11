@@ -10,11 +10,17 @@
     "apps/*",
     "packages/*"
   ],
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
   "scripts": {
     "test": "node --test",
-    "check": "node --check apps/api/src/server.mjs && node --check apps/worker/src/worker.mjs && node --check packages/core/src/index.mjs && node --check packages/sdk/src/index.mjs",
-    "lint": "npm run check",
-    "build": "npm run check",
+    "check": "node --check apps/api/src/server.mjs && node --check apps/worker/src/worker.mjs && node --check packages/core/src/index.mjs && node --check packages/sdk/src/index.mjs && node --check packages/sdk/src/generated.mjs",
+    "lint": "npm run check && npm run generate:check",
+    "generate:sdk": "node scripts/generate-sdk.mjs",
+    "generate:check": "node scripts/generate-sdk.mjs --check",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "npm run check && npm run typecheck",
     "release:dry-run": "npm pack --dry-run --json"
   }
 }
