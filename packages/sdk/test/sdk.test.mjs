@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {EngineClient} from '../src/index.mjs';
+test('SDK routes typed operations without hidden provider calls',async()=>{const paths=[];const client=new EngineClient({baseUrl:'https://example.test',fetchImpl:async url=>{paths.push(new URL(url).pathname);return {ok:true,json:async()=>({status:'ok'})}}});assert.equal((await client.health()).status,'ok');await client.capabilities();assert.deepEqual(paths,['/health','/v1/capabilities']);});
+test('SDK propagates failure',async()=>{const client=new EngineClient({baseUrl:'https://example.test',fetchImpl:async()=>({ok:false,status:503})});await assert.rejects(client.health(),/503/);});
