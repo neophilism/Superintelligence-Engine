@@ -1,0 +1,5 @@
+# SIE-014 Budget reservation and usage accounting
+
+All internal amounts are signed PostgreSQL bigint **integer microunits**, never floating money. **Global cap defaults to zero**. A trusted provisioning process must first set global and per-tenant funding/hard caps. Operations run in SQL transactions with a consistent global-then-tenant lock order. The reservation idempotency key prevents duplicate authorization; settlement is bounded by the reservation, can safely replay exact callbacks, and releases any unused hold. Release and partial refund are idempotent, append audit entries and reconcile limits. Tests issue twenty simultaneous requests against a five-request budget, verify no overdraft and audit replay correctness.
+
+No public funding/write endpoints exist. Authenticated tenant actions and live provider receipts belong to SIE-003/004/011/012/016. Before live AI generation, provider usage and invoice reconciliation, signed receipts, regional prices and spending policy approval must be verified end-to-end. No payment processor or fake free credits have been enabled.
