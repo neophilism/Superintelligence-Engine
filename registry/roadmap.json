@@ -128,7 +128,9 @@
         "Expired or foreign-tenant links cannot retrieve assets.",
         "Malicious upload fixture is quarantined and never delivered to editors."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        11
+      ]
     },
     {
       "id": "SIE-007",
@@ -234,7 +236,9 @@
         "Two independent fake providers pass the identical conformance suite.",
         "Provider credentials and raw private prompts do not leak into browser bundles or logs."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        10
+      ]
     },
     {
       "id": "SIE-012",
