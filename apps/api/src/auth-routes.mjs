@@ -1,6 +1,6 @@
 import {brokerFromEnvironment} from '../../../packages/auth/src/index.mjs';
 const defaultBroker=brokerFromEnvironment();
-export function authRoute(req,res,pathname,{broker=defaultBroker,returnUrls={academy:process.env.ACADEMY_RETURN_URL,command:process.env.COMMAND_RETURN_URL}}={}){
+export function authRoute(req,res,pathname,{broker=defaultBroker,returnUrls={academy:process.env.ACADEMY_RETURN_URL,command:process.env.COMMAND_RETURN_URL},redirectUris={academy:process.env.OIDC_ACADEMY_REDIRECT_URI,command:process.env.OIDC_COMMAND_REDIRECT_URI}}={}){
  const match=/^\/auth\/(academy|command)\/(start|callback|session|logout)$/.exec(pathname);
  if(!match)return false;
  const [,product,action]=match;
@@ -13,9 +13,15 @@ export function authRoute(req,res,pathname,{broker=defaultBroker,returnUrls={aca
   broker.begin(product).then(x=>{res.writeHead(302,{Location:x.url,'Set-Cookie':x.flowCookie,'Cache-Control':'no-store'});res.end();}).catch(fail);return true;
  }
  if(action==='callback'&&req.method==='GET'){
-  broker.complete({product,callbackUrl:url.href,cookieHeader:cookies}).then(x=>{
-   const next=returnUrls[product];
-   if(!next||new URL(next).protocol!=='https:')return reply(503,{code:'return_unconfigured',message:'Return URL unavailable'});
+  const next=returnUrls[product],registered=redirectUris[product];
+  if(!next||!registered)return reply(503,{code:'return_unconfigured',message:'Authorized callback and return URLs are required'});
+  let canonical;
+  try{
+   const callback=new URL(registered),returnUrl=new URL(next);
+   if(callback.protocol!=='https:'||returnUrl.protocol!=='https:'||callback.pathname!==pathname)throw new Error('Untrusted redirect configuration');
+   callback.search=url.search;canonical=callback.href;
+  }catch{return reply(503,{code:'return_unconfigured',message:'Invalid callback or return URL configuration'});}
+  broker.complete({product,callbackUrl:canonical,cookieHeader:cookies}).then(x=>{
    res.writeHead(302,{Location:next,'Set-Cookie':[x.sessionCookie,x.clearFlowCookie],'Cache-Control':'no-store'});res.end();
   }).catch(fail);return true;
  }
