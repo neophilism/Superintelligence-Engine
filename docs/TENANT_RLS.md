@@ -1,0 +1,7 @@
+# SIE-004 Tenant permissions and forced PostgreSQL RLS
+
+A validated engine session from SIE-003 is the only acceptable source of identity ID. `withTenantScope` uses a transaction-scoped identity and tenant context, checks actual current membership, checks requested role, then executes project/asset queries inside that same transaction. All tenant tables have FORCE ROW LEVEL SECURITY. Read policies enforce current membership; write policies disallow viewer changes and restrict deletes. Ledger and identity writes remain privileged, and no application principal should receive broad database privileges or permission to update `projects.tenant_id`/`owner_id`.
+
+Migration adds RLS policies but **does not automatically create or grant a production application database role**. A least-privileged Neon role must be provisioned separately under authorized production configuration. The disposable PostgreSQL test creates such a non-owner role and exercises true RLS denial, cross-tenant reads, anonymous reads, viewer write attempts, and immediate membership revocation.
+
+Transaction-local Postgres variables are defense in depth, not proof of user authentication. Never accept identity or role from client JSON. SQL injection and pooled connection safety require continued test coverage; use `set_config(...,true)` inside BEGIN/COMMIT and never retain tenant context outside transaction boundaries. Review Neon branch role grants before enabling any project APIs.
