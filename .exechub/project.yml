@@ -1,0 +1,10 @@
+# Canonical plan: registry/roadmap.json. This is a secondary manifest; do not parse this as a separate denominator.
+project:
+  name: Superintelligence-Engine
+  display_name: Superintelligence Engine
+  repository: neophilism/Superintelligence-Engine
+  status: active-development
+roadmap:
+  version: 1
+  planned_prs: 40
+  approved: true
