@@ -18,6 +18,8 @@ export type Run = { "id": string; "status": "pending" | "running" | "paused" | "
 export type ApprovalDecision = { "decision": "approve" | "deny"; };
 export type Approval = { "id": string; "status": "pending" | "approved" | "denied" | "expired"; "action": string; };
 export type Usage = { "spentMicrounits": number; "reservedMicrounits": number; "currency": string; };
+export type ModelRecord = { "id": string; "provider": string; "model": string; "revision": string; "operations": Array<string>; "modalities": Array<string>; "regions": Array<string>; "licenseScope": "none" | "personal" | "commercial"; "priceStatus": "known" | "unknown"; "healthStatus": "healthy" | "degraded" | "outage" | "unknown"; "available": boolean; "reasons": Array<string>; };
+export type ModelCatalogResponse = { "items": Array<ModelRecord>; };
 export class GeneratedEngineClient extends EngineClient {
   getHealth(options?: {signal?: AbortSignal}): Promise<HealthResponse>;
   listCapabilities(options?: {signal?: AbortSignal}): Promise<CapabilitiesResponse>;
@@ -33,4 +35,5 @@ export class GeneratedEngineClient extends EngineClient {
   getApproval(params: {approvalId: string}, options?: {signal?: AbortSignal}): Promise<Approval>;
   decideApproval(params: {approvalId: string}, body: ApprovalDecision, options?: {signal?: AbortSignal}): Promise<Approval>;
   getUsage(options?: {signal?: AbortSignal}): Promise<Usage>;
+  listModels(options?: {signal?: AbortSignal}): Promise<ModelCatalogResponse>;
 }

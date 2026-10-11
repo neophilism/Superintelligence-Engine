@@ -15,4 +15,5 @@ export class GeneratedEngineClient extends EngineClient {
   getApproval(params, options={}) {return this.requestValidated("GET",("/v1/approvals/{approvalId}").replace("{approvalId}", encodeURIComponent(params.approvalId)),undefined,"Approval",options.signal);}
   decideApproval(params, body, options={}) {return this.requestValidated("POST",("/v1/approvals/{approvalId}/decision").replace("{approvalId}", encodeURIComponent(params.approvalId)),body,"Approval",options.signal);}
   getUsage(options={}) {return this.requestValidated("GET","/v1/usage",undefined,"Usage",options.signal);}
+  listModels(options={}) {return this.requestValidated("GET","/v1/models",undefined,"ModelCatalogResponse",options.signal);}
 }
