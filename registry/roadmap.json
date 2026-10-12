@@ -64,7 +64,8 @@
         "Session fixation, CSRF, expired-token and cross-app audience misuse tests fail closed."
       ],
       "pullRequests": [
-        8
+        8,
+        19
       ]
     },
     {
