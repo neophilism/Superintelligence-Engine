@@ -2,6 +2,7 @@ import {createServer} from 'node:http';
 import {projectRoute} from './project-routes.mjs';
 import {authRoute} from './auth-routes.mjs';
 import {tenantRoute} from './tenant-routes.mjs';
+import {textGenerationRoute} from './text-generation-routes.mjs';
 import {handleProductCors} from './product-cors.mjs';
 import {ENGINE_VERSION,WORKSPACE_KINDS} from '../../../packages/core/src/index.mjs';
 import {readFileSync} from 'node:fs';
@@ -10,13 +11,14 @@ const contract=JSON.parse(readFileSync(new URL('../../../contracts/openapi.json'
 const patterns=Object.entries(contract.paths).flatMap(([path,methods])=>Object.entries(methods).map(([method,op])=>({method:method.toUpperCase(),regex:new RegExp('^'+path.replace(/\{[^}]+\}/g,'[^/]+')+'$'),op})));
 const pool=makeCatalogPool(process.env.MODEL_CATALOG_READ_URL);
 const defaultCatalog=pool?new CapabilityCatalog({db:pool}):null;
-export function handler(req,res,{catalog=defaultCatalog,originConfig,tenantAuth,tenantDb}={}) {
+export function handler(req,res,{catalog=defaultCatalog,originConfig,tenantAuth,tenantDb,textAuth,textService,textAuthorizedOrigins}={}) {
   const path=new URL(req.url||'/', 'http://localhost').pathname;
   res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');
   const reply=(code,data)=>{res.writeHead(code);res.end(JSON.stringify(data));};
   if(handleProductCors(req,res,path,{...(originConfig?{origins:originConfig}:{})}))return;
   if(authRoute(req,res,path))return;
   if(tenantRoute(req,res,path,{...(tenantAuth?{auth:tenantAuth}:{}),...(tenantDb?{db:tenantDb}:{})}))return;
+  if(textGenerationRoute(req,res,path,{...(textAuth?{auth:textAuth}:{}),...(textService?{service:textService}:{}),...(textAuthorizedOrigins?{authorizedOrigins:textAuthorizedOrigins}:{})}))return;
   if(projectRoute(req,res,path))return;
   if(path==='/health' && req.method==='GET')return reply(200,{status:'ok',version:ENGINE_VERSION});
   if(path==='/v1/capabilities' && req.method==='GET')return reply(200,{workspaceKinds:WORKSPACE_KINDS,availableProviders:[],generationEnabled:false});
