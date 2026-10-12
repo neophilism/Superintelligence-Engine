@@ -159,43 +159,54 @@ export function ProjectPortal({product='command',engineOrigin='',companionOrigin
  const current=projects.find(x=>x.id===project);
  let transfer=null;
  if(companionOrigin&&tenant&&project)try{transfer=buildProjectTransfer(companionOrigin,tenant,project)}catch{}
- return React.createElement('section',{className:'sie-project-portal','data-product':product,'aria-label':'Shared AI project library'},
-  React.createElement('div',{className:'sie-project-bar'},
-   React.createElement('h2',null,'Your projects'),
-   React.createElement('span',{role:'status','aria-live':'polite'},'Session: '+status)),
-  status==='unconfigured'&&React.createElement('p',null,'Shared project storage is not configured. Drafting remains local to this browser session.'),
-  status==='checking'&&React.createElement('p',null,'Checking your secure project session…'),
-  status==='unavailable'&&React.createElement('p',null,'Project service is not reachable or has not been provisioned. No changes were made.'),
-  status==='signed-out'&&React.createElement('a',{href:client.signInUrl()},'Sign in to your shared projects'),
-  status==='signed-in'&&React.createElement(React.Fragment,null,
-   React.createElement('div',{className:'sie-project-controls'},
-    React.createElement('label',null,'Organization',
-     React.createElement('select',{value:tenant,onChange:e=>{setTenant(e.target.value);setProject('');setChosenArtifact('')}},
-      ...tenants.map(x=>React.createElement('option',{key:x.id,value:x.id},x.name+' · '+x.role)))),
-    React.createElement('button',{type:'button',onClick:signOut},'Sign out')),
-   tenants.length===0&&React.createElement('p',null,'Your account has no project organizations. An administrator must grant membership.'),
-   !!tenant&&React.createElement(React.Fragment,null,
-    React.createElement('form',{className:'sie-project-create',onSubmit:create},
-     React.createElement('label',null,'New project title',
-      React.createElement('input',{value:title,maxLength:256,onChange:e=>setTitle(e.target.value),placeholder:'Project title',required:true})),
-     React.createElement('button',{disabled:busy||!title.trim(),type:'submit'},busy?'Saving…':'Create '+domain+' project')),
-    React.createElement('div',{className:'sie-project-contents'},
-     React.createElement('div',{className:'sie-project-list'},
-      React.createElement('h3',null,'Projects'),
-      projects.length===0&&React.createElement('p',null,'No projects yet in this organization.'),
-      ...projects.map(p=>React.createElement('button',{type:'button',key:p.id,'aria-current':p.id===project?'true':undefined,
-       onClick:()=>chooseProject(p)},p.title+' · '+p.kind+' · revision '+p.revision))),
-     !!current&&React.createElement('section',{className:'sie-project-details','aria-label':'Selected project'},
-      React.createElement('h3',null,current.title),
-      React.createElement('p',null,'Canonical project ID: '+current.id),
-      transfer&&React.createElement('a',{href:transfer},product==='academy'?'Continue in Command Center':'Open in Academy'),
-      React.createElement('h4',null,'Artifacts'),
-      artifacts.length===0&&React.createElement('p',null,'No saved artifacts yet.'),
-      ...artifacts.map(a=>React.createElement('button',{type:'button',key:a.id,onClick:()=>{setChosenArtifact(a.id);setVersions([])}},
-        a.mediaType+' · revision '+a.revision+' · '+a.id)),
-      !!chosenArtifact&&React.createElement('div',{className:'sie-project-history'},
-       React.createElement('h4',null,'Immutable history'),
-       versions.map(v=>React.createElement('p',{key:v.revision},'Revision '+v.revision+' · '+v.mediaType+' · '+v.checksum)),
-       !versions.length&&React.createElement('p',null,'No revision records loaded.'))))))),
-  error&&React.createElement('p',{className:'sie-project-error',role:'alert'},error));
+ const h=React.createElement;
+ const sections=[
+  h('div',{key:'bar',className:'sie-project-bar'},
+    h('h2',null,'Your projects'),
+    h('span',{role:'status','aria-live':'polite'},'Session: '+status))
+ ];
+ if(status==='unconfigured')sections.push(h('p',{key:'unconfigured'},'Shared project storage is not configured. Drafting remains local to this browser session.'));
+ if(status==='checking')sections.push(h('p',{key:'checking'},'Checking your secure project session…'));
+ if(status==='unavailable')sections.push(h('p',{key:'unavailable'},'Project service is not reachable or has not been provisioned. No changes were made.'));
+ if(status==='signed-out'&&client)sections.push(h('a',{key:'login',href:client.signInUrl()},'Sign in to your shared projects'));
+ if(status==='signed-in'){
+  sections.push(h('div',{key:'org',className:'sie-project-controls'},
+   h('label',null,'Organization',h('select',{value:tenant,onChange:e=>{setTenant(e.target.value);setProject('');setChosenArtifact('')}},
+    ...tenants.map(x=>h('option',{key:x.id,value:x.id},x.name+' · '+x.role)))),
+   h('button',{type:'button',onClick:signOut},'Sign out')));
+  if(!tenants.length)sections.push(h('p',{key:'no-membership'},'Your account has no project organizations. An administrator must grant membership.'));
+  if(tenant){
+   sections.push(h('form',{key:'create',className:'sie-project-create',onSubmit:create},
+    h('label',null,'New project title',h('input',{value:title,maxLength:256,onChange:e=>setTitle(e.target.value),placeholder:'Project title',required:true})),
+    h('button',{type:'submit',disabled:busy||!title.trim()},busy?'Saving…':'Create '+domain+' project')));
+   const listChildren=[
+    h('h3',{key:'title'},'Projects'),
+    ...(!projects.length?[h('p',{key:'empty'},'No projects yet in this organization.')]:[]),
+    ...projects.map(p=>h('button',{type:'button',key:p.id,'aria-current':p.id===project?'true':undefined,
+      onClick:()=>chooseProject(p)},p.title+' · '+p.kind+' · revision '+p.revision))
+   ];
+   const contents=[h('div',{className:'sie-project-list',key:'list'},...listChildren)];
+   if(current){
+    const detail=[
+     h('h3',{key:'name'},current.title),
+     h('p',{key:'id'},'Canonical project ID: '+current.id),
+     ...(transfer?[h('a',{key:'transfer',href:transfer},product==='academy'?'Continue in Command Center':'Open in Academy')]:[]),
+     h('h4',{key:'artifacts'},'Artifacts'),
+     ...(!artifacts.length?[h('p',{key:'empty'},'No saved artifacts yet.')]:[]),
+     ...artifacts.map(a=>h('button',{key:a.id,type:'button',onClick:()=>{setChosenArtifact(a.id);setVersions([])}},
+      a.mediaType+' · revision '+a.revision+' · '+a.id))
+    ];
+    if(chosenArtifact){
+     detail.push(h('div',{key:'history',className:'sie-project-history'},
+      h('h4',null,'Immutable history'),
+      ...versions.map(v=>h('p',{key:v.revision},'Revision '+v.revision+' · '+v.mediaType+' · '+v.checksum)),
+      ...(!versions.length?[h('p',{key:'empty'},'No revision records loaded.')]:[])));
+    }
+    contents.push(h('section',{key:'detail',className:'sie-project-details','aria-label':'Selected project'},...detail));
+   }
+   sections.push(h('div',{key:'contents',className:'sie-project-contents'},...contents));
+  }
+ }
+ if(error)sections.push(h('p',{key:'error',className:'sie-project-error',role:'alert'},error));
+ return h('section',{className:'sie-project-portal','data-product':product,'aria-label':'Shared AI project library'},...sections);
 }
