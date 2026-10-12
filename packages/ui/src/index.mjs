@@ -46,3 +46,5 @@ export function DomainTool({product='command',domain,title,controls,values={},on
 }
 // The shared UI deliberately renders no teaching hints or tutor content.
 // Academy overlays attach to stable data-help-anchor attributes externally.
+
+export {ProjectPortal,ProjectPortalClient,ProjectPortalError,parseProjectTransfer,buildProjectTransfer} from './project-portal.mjs';
