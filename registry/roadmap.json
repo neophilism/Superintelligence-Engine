@@ -349,7 +349,9 @@
         "Kill worker between reserve and provider acknowledgment then recover safely.",
         "Concurrent workers cannot claim the same job twice."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        15
+      ]
     },
     {
       "id": "SIE-017",
