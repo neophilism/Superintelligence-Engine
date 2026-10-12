@@ -1,4 +1,5 @@
 import {createServer} from 'node:http';
+import {projectRoute} from './project-routes.mjs';
 import {authRoute} from './auth-routes.mjs';
 import {ENGINE_VERSION,WORKSPACE_KINDS} from '../../../packages/core/src/index.mjs';
 import {readFileSync} from 'node:fs';
@@ -12,6 +13,7 @@ export function handler(req,res,{catalog=defaultCatalog}={}) {
   res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');
   const reply=(code,data)=>{res.writeHead(code);res.end(JSON.stringify(data));};
   if(authRoute(req,res,path))return;
+  if(projectRoute(req,res,path))return;
   if(path==='/health' && req.method==='GET')return reply(200,{status:'ok',version:ENGINE_VERSION});
   if(path==='/v1/capabilities' && req.method==='GET')return reply(200,{workspaceKinds:WORKSPACE_KINDS,availableProviders:[],generationEnabled:false});
   if(path==='/v1/models' && req.method==='GET'){

@@ -186,7 +186,7 @@
             }
           }
         },
-        "x-implementation": "planned"
+        "x-implementation": "live"
       },
       "post": {
         "operationId": "createProject",
@@ -253,7 +253,7 @@
             }
           }
         },
-        "x-implementation": "planned"
+        "x-implementation": "live"
       }
     },
     "/v1/projects/{projectId}": {
@@ -323,7 +323,7 @@
             }
           }
         },
-        "x-implementation": "planned"
+        "x-implementation": "live"
       }
     },
     "/v1/projects/{projectId}/artifacts": {
@@ -393,7 +393,7 @@
             }
           }
         },
-        "x-implementation": "planned"
+        "x-implementation": "live"
       },
       "post": {
         "operationId": "createArtifact",
@@ -471,7 +471,7 @@
             }
           }
         },
-        "x-implementation": "planned"
+        "x-implementation": "live"
       }
     },
     "/v1/workflows": {
@@ -1006,6 +1006,324 @@
         },
         "x-implementation": "live"
       }
+    },
+    "/v1/projects/{projectId}/artifacts/{artifactId}/revisions": {
+      "post": {
+        "operationId": "reviseArtifact",
+        "summary": "reviseArtifact",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "artifactId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArtifactRevisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Artifact"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation": "live"
+      },
+      "get": {
+        "operationId": "getArtifactHistory",
+        "summary": "getArtifactHistory",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "artifactId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation": "live"
+      }
+    },
+    "/v1/projects/{projectId}/artifacts/{artifactId}/restore": {
+      "post": {
+        "operationId": "restoreArtifact",
+        "summary": "restoreArtifact",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "artifactId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArtifactRestoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Artifact"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation": "live"
+      }
+    },
+    "/v1/projects/{projectId}/export": {
+      "get": {
+        "operationId": "exportProject",
+        "summary": "exportProject",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectExport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation": "live"
+      }
     }
   },
   "components": {
@@ -1167,6 +1485,19 @@
             "items": {
               "type": "string"
             }
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {},
+          "assetId": {
+            "type": "string"
+          },
+          "rights": {
+            "type": "object"
+          },
+          "provenance": {
+            "type": "object"
           }
         }
       },
@@ -1464,6 +1795,97 @@
             "items": {
               "$ref": "#/components/schemas/ModelRecord"
             }
+          }
+        }
+      },
+      "ArtifactRevisionRequest": {
+        "type": "object",
+        "required": [
+          "expectedRevision",
+          "mediaType",
+          "checksum"
+        ],
+        "properties": {
+          "expectedRevision": {
+            "type": "integer"
+          },
+          "mediaType": {
+            "type": "string"
+          },
+          "checksum": {
+            "type": "string"
+          },
+          "body": {},
+          "assetId": {
+            "type": "string"
+          },
+          "rights": {
+            "type": "object"
+          },
+          "provenance": {
+            "type": "object"
+          }
+        }
+      },
+      "ArtifactRestoreRequest": {
+        "type": "object",
+        "required": [
+          "expectedRevision",
+          "targetRevision"
+        ],
+        "properties": {
+          "expectedRevision": {
+            "type": "integer"
+          },
+          "targetRevision": {
+            "type": "integer"
+          }
+        }
+      },
+      "ArtifactHistory": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "ProjectExport": {
+        "type": "object",
+        "required": [
+          "schemaVersion",
+          "project",
+          "artifacts",
+          "sha256",
+          "binaryAssetsEmbedded"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "integer"
+          },
+          "project": {
+            "$ref": "#/components/schemas/Project"
+          },
+          "artifacts": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "binaryAssetsEmbedded": {
+            "type": "boolean"
+          },
+          "exportedAt": {
+            "type": "string"
           }
         }
       }
