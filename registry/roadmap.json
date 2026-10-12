@@ -151,7 +151,9 @@
         "Create and revise multi-artifact project then reopen with exact lineage.",
         "Concurrent edit collision returns explicit conflict without data loss."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        12
+      ]
     },
     {
       "id": "SIE-008",
@@ -324,7 +326,9 @@
         "Reject cycles and wrong artifact types with understandable diagnostics.",
         "Legislative/film goal selections produce valid dependency graphs."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        14
+      ]
     },
     {
       "id": "SIE-016",
