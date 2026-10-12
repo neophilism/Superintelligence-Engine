@@ -49,7 +49,7 @@ export function validateWorkflowRecipe(recipe,{allowedOperations}={}){
     if(node.when!==undefined){
       object(node.when,node.id+'.when');fields(node.when,['node','port','equals'],node.id+'.when');
       identifier(node.when.node,node.id+'.when.node');identifier(node.when.port,node.id+'.when.port');
-      if(!['string','number','boolean'].includes(typeof node.when.equals)||!Number.isFinite(node.when.equals??0))fail('when.equals must be a finite scalar');
+      if(!['string','number','boolean'].includes(typeof node.when.equals)||(typeof node.when.equals==='number'&&!Number.isFinite(node.when.equals)))fail('when.equals must be a finite scalar');
     }
     nodes.set(node.id,node);
   }
