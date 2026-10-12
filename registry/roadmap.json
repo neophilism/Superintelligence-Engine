@@ -414,7 +414,9 @@
         "Injected retrieved page cannot request forbidden file/secret export.",
         "Revoking grant blocks later tool invocation and returns a clear error."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        16
+      ]
     },
     {
       "id": "SIE-020",
