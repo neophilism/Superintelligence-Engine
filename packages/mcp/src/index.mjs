@@ -110,13 +110,15 @@ export class McpGrantStore {
    guard(result.rowCount>0,'grant_denied','No current user-approved tool permission');
    return true;
  }
- async audit({principal,connectionId,scope,decision,input,output=null}){
+ async audit({principal,connectionId,scope,decision,inputSha256,outputSha256=null}){
    principalScope(principal);id(connectionId);
    guard(['allowed','denied','failed'].includes(decision),'invalid_audit_decision');
    return transaction(this.pool,async db=>{
      await db.query('SELECT pg_advisory_xact_lock(hashtext($1)::bigint)',[principal.tenantId]);
      const previous=(await db.query('SELECT event_sha256 FROM mcp_tool_audit WHERE tenant_id=$1 ORDER BY id DESC LIMIT 1',[principal.tenantId])).rows[0]?.event_sha256||'0'.repeat(64);
-     const inputDigest=hash(input),resultDigest=output===null?null:hash(output);
+     guard(typeof inputSha256==='string'&&/^[a-f0-9]{64}$/.test(inputSha256),'invalid_audit_hash');
+     guard(outputSha256===null||typeof outputSha256==='string'&&/^[a-f0-9]{64}$/.test(outputSha256),'invalid_audit_hash');
+     const inputDigest=inputSha256,resultDigest=outputSha256;
      const digest=hash([previous,principal.tenantId,principal.identityId,connectionId,scope,decision,inputDigest,resultDigest]);
      await db.query('INSERT INTO mcp_tool_audit(tenant_id,identity_id,connection_id,resource_scope,decision,input_sha256,output_sha256,previous_sha256,event_sha256) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',
        [principal.tenantId,principal.identityId,connectionId,scope,decision,inputDigest,resultDigest,previous,digest]);
@@ -188,7 +190,7 @@ export class ScopedMcpGateway {
      decision='allowed';
      return {untrusted:true,connectionId,method,source:String(conn.endpoint.origin),result:response};
    }catch(error){decision=error.code==='grant_denied'||error.code==='egress_denied'||error.code==='tool_not_allowlisted'?'denied':'failed';throw error}
-   finally{await this.grants.audit({principal,connectionId,scope,decision,input:method==='tools/call'?{tool:name,args}:{uri:name},output:response});}
+   finally{await this.grants.audit({principal,connectionId,scope,decision,inputSha256:hash(method==='tools/call'?{tool:name,args}:{uri:name}),outputSha256:response===null?null:hash(response)});}
  }
  async callTool({principal,connectionId,toolName,args}){return this.invoke({principal,connectionId,method:'tools/call',name:toolName,args})}
  async readResource({principal,connectionId,uri}){return this.invoke({principal,connectionId,method:'resources/read',name:uri})}

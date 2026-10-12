@@ -12,8 +12,8 @@ test('PostgreSQL MCP consent: scoped, renewable, revocable and audited without r
   const grantId=await store.grant({principal,connectionId:'trusted-docs',scope,approvedByUser:true,expiresAt:new Date(Date.now()+100000)});
   assert.equal(await store.authorize({principal,connectionId:'trusted-docs',scope}),true);
   await assert.rejects(store.authorize({principal,connectionId:'trusted-docs',scope:'tool:transfer'}),e=>e.code==='grant_denied');
-  const first=await store.audit({principal,connectionId:'trusted-docs',scope,decision:'allowed',input:{prompt:'secret-input'},output:{result:'secret-output'}});
-  const second=await store.audit({principal,connectionId:'trusted-docs',scope,decision:'denied',input:{requested:'unsafe'}});
+  const first=await store.audit({principal,connectionId:'trusted-docs',scope,decision:'allowed',inputSha256:'1'.repeat(64),outputSha256:'2'.repeat(64)});
+  const second=await store.audit({principal,connectionId:'trusted-docs',scope,decision:'denied',inputSha256:'3'.repeat(64)});
   assert.notEqual(first,second);
   const rows=(await pool.query('SELECT previous_sha256,event_sha256 FROM mcp_tool_audit WHERE tenant_id=$1 ORDER BY id',[tenant])).rows;
   assert.equal(rows[0].previous_sha256,'0'.repeat(64));assert.equal(rows[1].previous_sha256,first);
