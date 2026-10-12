@@ -19,7 +19,7 @@ function tariff(pricing){
   fixedMicros:integer(pricing.fixedMicros,'fixed rate'),
   inputTokenCeiling:integer(pricing.inputTokenCeiling,'input ceiling',1,250000)
  };
- check(x.inputMicroPerToken+x.outputMicroPerToken+x.fixedMicros>0,'invalid_pricing','Zero or unknown tariff');
+ check(x.inputMicroPerToken+x.outputMicroPerToken+x.fixedMicros>0,'invalid_pricing','Zero or unknown pricing tariff');
  return x;
 }
 function microCost(rate,inputTokens,outputTokens){
