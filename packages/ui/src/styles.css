@@ -2,3 +2,22 @@
 .sie-workspace[data-product="academy"]{--sie-radius:12px;--sie-pad:18px;--sie-gap:14px}
 .sie-workspace-header{display:flex;align-items:center;justify-content:space-between;gap:var(--sie-gap)}.sie-heading{font:inherit;font-size:1.2rem;font-weight:650;margin:0}.sie-panel{border:1px solid var(--sie-border);border-radius:var(--sie-radius);padding:var(--sie-pad)}.sie-panel-heading{font:inherit;font-weight:650;margin:0 0 var(--sie-gap)}.sie-tool-form{display:grid;gap:var(--sie-gap)}.sie-field{display:grid;gap:4px}.sie-field-label{font:inherit;font-weight:550}.sie-field-description{font-size:.85rem;color:#4a5565;margin:0}.sie-field-input{font:inherit;box-sizing:border-box;max-width:100%;min-height:38px;padding:8px 10px;border:1px solid var(--sie-border);border-radius:var(--sie-radius);background:var(--sie-bg);color:var(--sie-ink)}.sie-field-input:focus-visible,.sie-action:focus-visible{outline:3px solid var(--sie-focus);outline-offset:2px}.sie-action{font:inherit;min-height:38px;padding:8px 12px;border-radius:var(--sie-radius);border:1px solid #284c9e;background:#284c9e;color:white;cursor:pointer}.sie-action:disabled{opacity:.6;cursor:not-allowed}
 @media(prefers-reduced-motion:reduce){.sie-workspace *{scroll-behavior:auto!important;animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
+
+.sie-project-portal{--sie-radius:5px;color:inherit;border:1px solid #66809055;border-radius:var(--sie-radius);padding:16px;margin:16px 0;font:inherit;background:transparent}
+.sie-project-portal[data-product="academy"]{--sie-radius:12px}
+.sie-project-bar,.sie-project-controls,.sie-project-contents{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.sie-project-bar h2,.sie-project-list h3{font-size:1.03rem;margin:0 0 10px}
+.sie-project-bar span{font-size:.78rem}
+.sie-project-controls,.sie-project-create{margin:12px 0;display:flex;align-items:end;gap:10px;flex-wrap:wrap}
+.sie-project-controls label,.sie-project-create label{display:grid;gap:5px;font-size:.8rem;flex:1;min-width:180px}
+.sie-project-portal select,.sie-project-portal input{background:transparent;color:inherit;border:1px solid currentColor;border-radius:var(--sie-radius);padding:8px}
+.sie-project-portal button{font:inherit;background:transparent;color:inherit;border:1px solid #7891a1;border-radius:var(--sie-radius);min-height:38px;padding:7px 9px;cursor:pointer}
+.sie-project-portal button:focus-visible,.sie-project-portal a:focus-visible,.sie-project-portal select:focus-visible,.sie-project-portal input:focus-visible{outline:3px solid #3a91c5;outline-offset:2px}
+.sie-project-list{min-width:min(220px,100%);display:grid;align-content:start;gap:6px;flex:1}
+.sie-project-list button{text-align:left}
+.sie-project-list button[aria-current="true"]{border:2px solid #3b9dc1;font-weight:700}
+.sie-project-details{flex:2;min-width:min(260px,100%);overflow-wrap:anywhere}
+.sie-project-details button{display:block;margin:6px 0;max-width:100%;overflow-wrap:anywhere}
+.sie-project-history{border-top:1px solid currentColor;padding-top:8px;margin-top:12px;font-size:.83rem}
+.sie-project-error{color:#d02f2f}
+@media(max-width:620px){.sie-project-portal{padding:10px}.sie-project-contents{display:block}.sie-project-list{margin-bottom:20px}}
