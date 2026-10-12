@@ -174,7 +174,8 @@
         "Keyboard navigation and package version compatibility checks pass."
       ],
       "pullRequests": [
-        3
+        3,
+        20
       ]
     },
     {
