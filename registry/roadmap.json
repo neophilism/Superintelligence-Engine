@@ -378,7 +378,8 @@
         "Cancel/retry transitions do not create invalid state or duplicate billable executions."
       ],
       "pullRequests": [
-        23
+        23,
+        24
       ]
     },
     {
