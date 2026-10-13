@@ -38,6 +38,20 @@ function parseRunEventReplay(text){
   if(events.some(event=>event.id>cursor))throw new ApiContractError('Replay cursor precedes an event');
   return {events,cursor};
 }
+function runScope(runId,{tenantId,product}={}){
+  if(typeof runId!=='string'||!UUID.test(runId))throw new TypeError('runId must be a UUID');
+  if(typeof tenantId!=='string'||!UUID.test(tenantId))throw new TypeError('tenantId must be a UUID');
+  if(!['academy','command'].includes(product))throw new TypeError('product must be academy or command');
+  return {tenantId,product};
+}
+function runRecord(value){
+  if(value===null||typeof value!=='object'||Array.isArray(value))throw new ApiContractError('Run response must be an object');
+  for(const field of ['id','tenantId','projectId'])if(typeof value[field]!=='string'||!UUID.test(value[field]))throw new ApiContractError('Malformed run '+field);
+  if(!['queued','blocked','completed','failed','cancelled'].includes(value.status))throw new ApiContractError('Malformed run status');
+  if(typeof value.createdAt!=='string')throw new ApiContractError('Malformed run timestamp');
+  if(value.replayed!==undefined&&typeof value.replayed!=='boolean')throw new ApiContractError('Malformed replay flag');
+  return value;
+}
 export function validateResponse(schemaName,value){if(!SCHEMAS[schemaName])throw new ApiContractError('Unknown contract '+schemaName);return check(value,SCHEMAS[schemaName]);}
 export class EngineClient {
   constructor({baseUrl,fetchImpl=fetch}={}) {if(!baseUrl)throw new TypeError('baseUrl required');const url=new URL(baseUrl);if(!['https:','http:'].includes(url.protocol))throw new TypeError('Unsupported URL');this.baseUrl=url.toString();this.fetchImpl=fetchImpl;}
@@ -48,6 +62,18 @@ export class EngineClient {
   }
   async health(){return this.requestValidated('GET','/health',undefined,'HealthResponse');}
   async capabilities(){return this.requestValidated('GET','/v1/capabilities',undefined,'CapabilitiesResponse');}
+  async runControl(method,runId,{tenantId,product,action='',body,signal}={}){
+    runScope(runId,{tenantId,product});
+    const response=await this.fetchImpl(new URL('/v1/runs/'+encodeURIComponent(runId)+(action?'/'+action:''),this.baseUrl),{method,credentials:'include',headers:{'Accept':'application/json','X-SIE-Product':product,'X-Tenant-ID':tenantId,...(body===undefined?{}:{'Content-Type':'application/json'})},...(body===undefined?{}:{body:JSON.stringify(body)}),signal});
+    if(!response.ok){let code='http_error';try{const error=await response.json();code=typeof error.code==='string'?error.code:code}catch{}const error=new Error('Engine API '+response.status+': '+code);error.status=response.status;throw error}
+    return runRecord(await response.json());
+  }
+  async inspectRun(runId,options={}){return this.runControl('GET',runId,options)}
+  async cancelRun(runId,options={}){return this.runControl('POST',runId,{...options,action:'cancel'})}
+  async retryRun(runId,{idempotencyKey,...options}={}){
+    if(typeof idempotencyKey!=='string'||!/^[A-Za-z0-9_.:-]{1,128}$/.test(idempotencyKey))throw new TypeError('idempotencyKey is invalid');
+    return this.runControl('POST',runId,{...options,action:'retry',body:{idempotencyKey}});
+  }
   async replayRunEvents(runId,{tenantId,product,after=0,signal}={}){
     if(typeof runId!=='string'||!UUID.test(runId))throw new TypeError('runId must be a UUID');
     if(typeof tenantId!=='string'||!UUID.test(tenantId))throw new TypeError('tenantId must be a UUID');
