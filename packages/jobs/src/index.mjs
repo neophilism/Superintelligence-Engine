@@ -64,6 +64,47 @@ export class DurableJobQueue {
    const result=await this.pool.query('SELECT id,event_type,payload,created_at FROM workflow_outbox WHERE tenant_id=$1 AND run_id=$2 AND id>$3 ORDER BY id LIMIT $4',[tenantId,runId,after,limit]);
    return result.rows.map(row=>({id:Number(row.id),type:row.event_type,payload:row.payload,createdAt:row.created_at}));
  }
+ async cancel({tenantId,runId,identityId}={}){
+   requireUUID(tenantId,'tenantId');requireUUID(runId,'runId');requireUUID(identityId,'identityId');
+   return transaction(this.pool,async db=>{
+     const run=(await db.query("SELECT r.* FROM workflow_runs r JOIN memberships m ON m.tenant_id=r.tenant_id WHERE r.tenant_id=$1 AND r.id=$2 AND m.identity_id=$3 AND m.role IN ('owner','admin','member') FOR UPDATE OF r",[tenantId,runId,identityId])).rows[0];
+     if(!run)throw new QueueError('not_found','Workflow run not found');
+     if(run.status==='cancelled')return {...output(run),replayed:true};
+     if(['completed','failed'].includes(run.status))throw new QueueError('invalid_state','Terminal workflow run cannot be cancelled');
+     const ambiguous=await db.query("SELECT 1 FROM workflow_jobs WHERE run_id=$1 AND (state IN ('dispatched','needs_reconciliation') OR provider_task_id IS NOT NULL) LIMIT 1",[runId]);
+     if(ambiguous.rowCount)throw new QueueError('provider_cancel_unavailable','Provider-dispatched work requires explicit reconciliation');
+     await db.query("UPDATE workflow_jobs SET state='cancelled',lease_owner=NULL,lease_token=NULL,lease_expires_at=NULL,updated_at=now() WHERE run_id=$1 AND state IN ('pending','ready','leased','failed')",[runId]);
+     const updated=(await db.query("UPDATE workflow_runs SET status='cancelled',updated_at=now() WHERE id=$1 RETURNING *",[runId])).rows[0];
+     await event(db,tenantId,runId,'run:'+runId+':cancelled','run.cancelled',{providerCancelRequested:false});
+     return {...output(updated),replayed:false};
+   });
+ }
+ async retry({tenantId,runId,identityId,idempotencyKey}={}){
+   requireUUID(tenantId,'tenantId');requireUUID(runId,'runId');requireUUID(identityId,'identityId');requireKey(idempotencyKey,'idempotencyKey');
+   return transaction(this.pool,async db=>{
+     const run=(await db.query("SELECT r.* FROM workflow_runs r JOIN memberships m ON m.tenant_id=r.tenant_id WHERE r.tenant_id=$1 AND r.id=$2 AND m.identity_id=$3 AND m.role IN ('owner','admin','member') FOR UPDATE OF r",[tenantId,runId,identityId])).rows[0];
+     if(!run)throw new QueueError('not_found','Workflow run not found');
+     const commandKey='run:'+runId+':retry:'+idempotencyKey;
+     const command=await db.query("INSERT INTO workflow_outbox(tenant_id,run_id,event_key,event_type,payload) VALUES($1,$2,$3,'run.retry-requested','{}'::jsonb) ON CONFLICT(event_key) DO NOTHING RETURNING id",[tenantId,runId,commandKey]);
+     if(!command.rowCount)return {...output(run),replayed:true};
+     if(!['failed','cancelled'].includes(run.status))throw new QueueError('invalid_state','Only failed or cancelled runs can be retried');
+     const all=(await db.query('SELECT * FROM workflow_jobs WHERE run_id=$1 ORDER BY id FOR UPDATE',[runId])).rows;
+     const candidates=all.filter(job=>['failed','cancelled'].includes(job.state));
+     if(!candidates.length)throw new QueueError('invalid_state','Workflow run has no retryable jobs');
+     if(candidates.some(job=>job.effects!=='read'||String(job.cost_ceiling_micro)!=='0'||job.provider_task_id!==null))throw new QueueError('retry_unsafe','Provider or billable work requires explicit reconciliation');
+     const states=new Map(all.map(job=>[job.node_id,job.state]));
+     let ready=0;
+     for(const job of candidates){
+       const state=job.dependencies.every(nodeId=>states.get(nodeId)==='succeeded')?'ready':'pending';
+       if(state==='ready')ready++;
+       await db.query("UPDATE workflow_jobs SET state=$2,attempt=0,next_attempt_at=now(),lease_owner=NULL,lease_token=NULL,lease_expires_at=NULL,failure_code=NULL,updated_at=now() WHERE id=$1",[job.id,state]);
+       await event(db,tenantId,runId,'job:'+job.id+':manual-retry:'+idempotencyKey,'job.retry-requested',{nodeId:job.node_id});
+     }
+     const status=ready?'queued':'blocked';
+     const updated=(await db.query('UPDATE workflow_runs SET status=$2,updated_at=now() WHERE id=$1 RETURNING *',[runId,status])).rows[0];
+     return {...output(updated),replayed:false};
+   });
+ }
  async claim({workerId,leaseSeconds=60}={}){
    requireKey(workerId,'workerId');
    if(!Number.isInteger(leaseSeconds)||leaseSeconds<5||leaseSeconds>300)throw new QueueError('invalid_lease','Lease TTL must be 5 to 300 seconds');
