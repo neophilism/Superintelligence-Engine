@@ -75,6 +75,28 @@ test('subscribes before replay and delivers a concurrent event once', async t =>
   assert.equal(unsubscribed, true);
 });
 
+test('fails closed and releases a subscription that errors before replay', async t => {
+  let unsubscribed = false;
+  const options = {
+    auth: {session: async () => ({identityId: identity})},
+    service: {
+      subscribe: async ({onError}) => {
+        onError();
+        return () => { unsubscribed = true; };
+      },
+      events: async () => assert.fail('replay must not start after a subscription error')
+    },
+    authorizedOrigins: []
+  };
+  const base = await serve(t, options);
+  const origin = new URL(base).origin;
+  options.authorizedOrigins.push(origin);
+  const response = await fetch(`${base}/v1/runs/${run}/events`, {headers: headers(origin)});
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {code: 'run_events_unavailable'});
+  assert.equal(unsubscribed, true);
+});
+
 test('fails closed for invalid cursors, origins and sessions', async t => {
   let calls = 0;
   const options = {auth: {session: async () => null}, service: {events: async () => { calls++; return []; }}, authorizedOrigins: []};
