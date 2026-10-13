@@ -18,6 +18,7 @@ export function projectRoute(req,res,pathname,{auth=defaultAuth,projects=default
  {method:'GET',regex:/^\/v1\/projects$/,run:(c)=>projects.list(c)},
  {method:'POST',regex:/^\/v1\/projects$/,run:(c,b)=>projects.create(c,b),status:201},
  {method:'GET',regex:/^\/v1\/projects\/([0-9a-f-]{36})$/,run:(c,b,m)=>projects.get(c,m[1])},
+ {method:'PATCH',regex:/^\/v1\/projects\/([0-9a-f-]{36})$/,run:(c,b,m)=>projects.update(c,m[1],b)},
  {method:'GET',regex:/^\/v1\/projects\/([0-9a-f-]{36})\/artifacts$/,run:(c,b,m)=>projects.listArtifacts(c,m[1])},
  {method:'POST',regex:/^\/v1\/projects\/([0-9a-f-]{36})\/artifacts$/,run:(c,b,m)=>projects.createArtifact(c,m[1],b),status:201},
  {method:'POST',regex:/^\/v1\/projects\/([0-9a-f-]{36})\/artifacts\/([0-9a-f-]{36})\/revisions$/,run:(c,b,m)=>projects.reviseArtifact(c,m[1],m[2],b),status:201},
