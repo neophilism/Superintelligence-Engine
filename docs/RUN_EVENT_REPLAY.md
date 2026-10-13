@@ -6,7 +6,7 @@ Clients resume with the standard `Last-Event-ID` header or the `after` query par
 
 The endpoint is disabled unless a trusted runtime injects authentication and durable event storage. The SDK helper consumes a bounded response; it does not hold a live connection open or silently retry. Callers persist the returned cursor and explicitly request the next replay after reconnecting.
 
-This increment does not implement live notification fanout, user cancellation, idempotent retry, provider cancellation guarantees, production deployment or browser acceptance; those remain required before SIE-017 is complete.
+The bounded replay endpoint alone does not implement live notification fanout, provider cancellation guarantees, production deployment or browser acceptance; those remain required before SIE-017 is complete.
 
 ## Cancellation and retry controls
 
