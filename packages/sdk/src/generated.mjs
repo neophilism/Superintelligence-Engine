@@ -7,6 +7,7 @@ export class GeneratedEngineClient extends EngineClient {
   listProjects(options={}) {return this.requestValidated("GET","/v1/projects",undefined,"ProjectList",options.signal);}
   createProject(body, options={}) {return this.requestValidated("POST","/v1/projects",body,"Project",options.signal);}
   getProject(params, options={}) {return this.requestValidated("GET",("/v1/projects/{projectId}").replace("{projectId}", encodeURIComponent(params["projectId"])),undefined,"Project",options.signal);}
+  updateProject(params, body, options={}) {return this.requestValidated("PATCH",("/v1/projects/{projectId}").replace("{projectId}", encodeURIComponent(params["projectId"])),body,"Project",options.signal);}
   listArtifacts(params, options={}) {return this.requestValidated("GET",("/v1/projects/{projectId}/artifacts").replace("{projectId}", encodeURIComponent(params["projectId"])),undefined,"ArtifactList",options.signal);}
   createArtifact(params, body, options={}) {return this.requestValidated("POST",("/v1/projects/{projectId}/artifacts").replace("{projectId}", encodeURIComponent(params["projectId"])),body,"Artifact",options.signal);}
   listWorkflows(options={}) {return this.requestValidated("GET","/v1/workflows",undefined,"WorkflowList",options.signal);}

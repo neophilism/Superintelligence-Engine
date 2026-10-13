@@ -5,6 +5,7 @@ export type HealthResponse = { "status": "ok"; "version": string; };
 export type CapabilitiesResponse = { "workspaceKinds": Array<string>; "availableProviders": Array<Provider>; "generationEnabled": boolean; };
 export type Provider = { "id": string; "model": string; "capabilities": Array<string>; "available": boolean; };
 export type ProjectCreate = { "title": string; "kind": string; };
+export type ProjectUpdate = { "expectedRevision": number; "title"?: string; "kind"?: string; };
 export type Project = { "id": string; "title": string; "kind": string; "revision": number; };
 export type ProjectList = { "items": Array<Project>; };
 export type ArtifactCreate = { "mediaType": string; "checksum": string; "parents"?: Array<string>; "title"?: string; "body"?: unknown; "assetId"?: string; "rights"?: Record<string, unknown>; "provenance"?: Record<string, unknown>; };
@@ -30,6 +31,7 @@ export class GeneratedEngineClient extends EngineClient {
   listProjects(options?: {signal?: AbortSignal}): Promise<ProjectList>;
   createProject(body: ProjectCreate, options?: {signal?: AbortSignal}): Promise<Project>;
   getProject(params: {"projectId": string}, options?: {signal?: AbortSignal}): Promise<Project>;
+  updateProject(params: {"projectId": string}, body: ProjectUpdate, options?: {signal?: AbortSignal}): Promise<Project>;
   listArtifacts(params: {"projectId": string}, options?: {signal?: AbortSignal}): Promise<ArtifactList>;
   createArtifact(params: {"projectId": string}, body: ArtifactCreate, options?: {signal?: AbortSignal}): Promise<Artifact>;
   listWorkflows(options?: {signal?: AbortSignal}): Promise<WorkflowList>;

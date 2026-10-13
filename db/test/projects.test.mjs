@@ -12,6 +12,10 @@ test('durable project and artifact version graph supports create, revise, confli
  try{
   const project=await service.create(context,{title:'Film pitch',kind:'video'});
   assert.equal(project.revision,1);assert.equal((await service.list(context)).items.some(x=>x.id===project.id),true);
+  const renamed=await service.update(context,project.id,{title:'Film pitch revised',expectedRevision:1});
+  assert.deepEqual(renamed,{...project,title:'Film pitch revised',revision:2});
+  await assert.rejects(service.update(context,project.id,{title:'Stale overwrite',expectedRevision:1}),e=>e.code==='revision_conflict'&&e.status===409);
+  assert.equal((await service.get(context,project.id)).title,'Film pitch revised');
   const first={scene:'opening',length:30},second={scene:'revised',length:15};
   const artifact=await service.createArtifact(context,project.id,{title:'Storyboard',mediaType:'application/json',checksum:sha(first),body:first,rights:{commercial:true},provenance:{source:'editor'}});
   assert.equal(artifact.revision,1);

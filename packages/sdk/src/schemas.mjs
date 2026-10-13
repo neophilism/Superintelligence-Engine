@@ -102,6 +102,23 @@ export const SCHEMAS = {
       }
     }
   },
+  "ProjectUpdate": {
+    "type": "object",
+    "required": [
+      "expectedRevision"
+    ],
+    "properties": {
+      "expectedRevision": {
+        "type": "integer"
+      },
+      "title": {
+        "type": "string"
+      },
+      "kind": {
+        "type": "string"
+      }
+    }
+  },
   "Project": {
     "type": "object",
     "required": [
