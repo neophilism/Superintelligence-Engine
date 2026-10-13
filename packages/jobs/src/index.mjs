@@ -55,6 +55,15 @@ export class DurableJobQueue {
    if(!found.rowCount)throw new QueueError('not_found','Workflow run not found');
    return output(found.rows[0]);
  }
+ async events({tenantId,runId,identityId,after=0,limit=100}={}){
+   requireUUID(tenantId,'tenantId');requireUUID(runId,'runId');requireUUID(identityId,'identityId');
+   if(!Number.isSafeInteger(after)||after<0)throw new QueueError('invalid_cursor','Event cursor must be a non-negative safe integer');
+   if(!Number.isInteger(limit)||limit<1||limit>500)throw new QueueError('invalid_limit','Event limit must be 1 to 500');
+   const allowed=await this.pool.query("SELECT 1 FROM workflow_runs r JOIN memberships m ON m.tenant_id=r.tenant_id WHERE r.tenant_id=$1 AND r.id=$2 AND m.identity_id=$3",[tenantId,runId,identityId]);
+   if(!allowed.rowCount)throw new QueueError('not_found','Workflow run not found');
+   const result=await this.pool.query('SELECT id,event_type,payload,created_at FROM workflow_outbox WHERE tenant_id=$1 AND run_id=$2 AND id>$3 ORDER BY id LIMIT $4',[tenantId,runId,after,limit]);
+   return result.rows.map(row=>({id:Number(row.id),type:row.event_type,payload:row.payload,createdAt:row.created_at}));
+ }
  async claim({workerId,leaseSeconds=60}={}){
    requireKey(workerId,'workerId');
    if(!Number.isInteger(leaseSeconds)||leaseSeconds<5||leaseSeconds>300)throw new QueueError('invalid_lease','Lease TTL must be 5 to 300 seconds');

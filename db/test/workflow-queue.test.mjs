@@ -30,6 +30,11 @@ test('durable queue: idempotent submit, concurrent lease, dependent release, che
   const next=await q.claim({workerId:'second'});assert.equal(next.node_id,'validate');
   await q.complete({jobId:next.id,workerId:'second',leaseToken:next.lease_token,result:{ok:true}});
   assert.equal((await q.get(first.id,tenant)).status,'completed');
+  const history=await q.events({tenantId:tenant,runId:first.id,identityId:identity,limit:50});
+  assert.ok(history.length>=4);assert.equal(history.at(-1).type,'run.completed');
+  assert.deepEqual((await q.events({tenantId:tenant,runId:first.id,identityId:identity,after:history.at(-1).id})),[]);
+  await assert.rejects(q.events({tenantId:tenant,runId:first.id,identityId:'00000000-0000-4000-8000-000000000001'}),e=>e.code==='not_found');
+  await assert.rejects(q.events({tenantId:tenant,runId:first.id,identityId:identity,after:-1}),e=>e.code==='invalid_cursor');
   const events=await q.claimOutbox({workerId:'notifier',limit:50});assert.ok(events.length>=4);
   await q.acknowledgeOutbox({workerId:'notifier',eventId:Number(events[0].id)});
   await assert.rejects(q.acknowledgeOutbox({workerId:'different',eventId:Number(events[1].id)}),e=>e.code==='stale_outbox');
