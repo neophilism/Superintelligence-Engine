@@ -90,6 +90,8 @@ test('authenticated cancellation and retry are durable, idempotent and lease-saf
   await pool.query("INSERT INTO memberships(tenant_id,identity_id,role) VALUES($1,$2,'owner')",[tenant,identity]);
   const project=(await pool.query("INSERT INTO projects(tenant_id,owner_id,title,kind) VALUES($1,$2,'Control Test','research') RETURNING id",[tenant,identity])).rows[0].id;
   const run=await q.enqueue({tenantId:tenant,identityId:identity,projectId:project,idempotencyKey:'control-run',recipe:recipe('control')});
+  assert.equal((await q.inspect({tenantId:tenant,runId:run.id,identityId:identity})).status,'queued');
+  await assert.rejects(q.inspect({tenantId:tenant,runId:run.id,identityId:'00000000-0000-4000-8000-000000000001'}),e=>e.code==='not_found');
   const lease=await q.claim({workerId:'control-worker'});assert.ok(lease);
   const cancelled=await q.cancel({tenantId:tenant,runId:run.id,identityId:identity});assert.equal(cancelled.status,'cancelled');assert.equal(cancelled.replayed,false);
   assert.equal((await q.cancel({tenantId:tenant,runId:run.id,identityId:identity})).replayed,true);
