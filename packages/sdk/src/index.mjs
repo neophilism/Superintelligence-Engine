@@ -74,14 +74,17 @@ export class EngineClient {
     if(typeof idempotencyKey!=='string'||!/^[A-Za-z0-9_.:-]{1,128}$/.test(idempotencyKey))throw new TypeError('idempotencyKey is invalid');
     return this.runControl('POST',runId,{...options,action:'retry',body:{idempotencyKey}});
   }
-  async replayRunEvents(runId,{tenantId,product,after=0,signal}={}){
+  async replayRunEvents(runId,{tenantId,product,after=0,follow=false,signal}={}){
     if(typeof runId!=='string'||!UUID.test(runId))throw new TypeError('runId must be a UUID');
     if(typeof tenantId!=='string'||!UUID.test(tenantId))throw new TypeError('tenantId must be a UUID');
     if(!['academy','command'].includes(product))throw new TypeError('product must be academy or command');
     if(!Number.isSafeInteger(after)||after<0)throw new TypeError('after must be a non-negative safe integer');
-    const response=await this.fetchImpl(new URL('/v1/runs/'+encodeURIComponent(runId)+'/events',this.baseUrl),{method:'GET',credentials:'include',headers:{'Accept':'text/event-stream','X-SIE-Product':product,'X-Tenant-ID':tenantId,'Last-Event-ID':String(after)},signal});
+    if(typeof follow!=='boolean')throw new TypeError('follow must be a boolean');
+    const url=new URL('/v1/runs/'+encodeURIComponent(runId)+'/events',this.baseUrl);if(follow)url.searchParams.set('follow','1');
+    const response=await this.fetchImpl(url,{method:'GET',credentials:'include',headers:{'Accept':'text/event-stream','X-SIE-Product':product,'X-Tenant-ID':tenantId,'Last-Event-ID':String(after)},signal});
     if(!response.ok){let code='http_error';try{const error=await response.json();code=typeof error.code==='string'?error.code:code}catch{}const error=new Error('Engine API '+response.status+': '+code);error.status=response.status;throw error}
     if(!response.headers?.get('content-type')?.toLowerCase().startsWith('text/event-stream'))throw new ApiContractError('Expected run event stream');
     return parseRunEventReplay(await response.text());
   }
+  async followRunEvents(runId,options={}){return this.replayRunEvents(runId,{...options,follow:true})}
 }
