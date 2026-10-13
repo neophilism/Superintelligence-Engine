@@ -18,19 +18,20 @@ function publicCode(error){
  const allowed=new Set(['json_required','request_too_large','invalid_json','invalid_key','authentication_required','not_found','invalid_state','provider_cancel_unavailable','retry_unsafe']);
  return allowed.has(error?.code)?error.code:'run_control_unavailable';
 }
-/** Authenticated SIE-017 cancellation/retry boundary over an injected durable queue service. */
+/** Authenticated SIE-017 inspection/cancellation/retry boundary over an injected durable queue service. */
 export function runControlRoute(req,res,pathname,{auth,service,authorizedOrigins=[]}={}){
- const match=/^\/v1\/runs\/([0-9a-f-]{36})\/(cancel|retry)$/.exec(pathname);if(!match)return false;
- if(req.method!=='POST'){reply(res,405,{code:'method_not_allowed'});return true}
- if(!auth||!service||typeof service[match[2]]!=='function'){reply(res,503,{code:'run_controls_unconfigured'});return true}
+ const match=/^\/v1\/runs\/([0-9a-f-]{36})(?:\/(cancel|retry))?$/.exec(pathname);if(!match)return false;
+ const action=match[2]||'inspect',allowed=(action==='inspect'&&req.method==='GET')||(action!=='inspect'&&req.method==='POST');
+ if(!allowed){reply(res,405,{code:'method_not_allowed'});return true}
+ if(!auth||!service||typeof service[action]!=='function'){reply(res,503,{code:'run_controls_unconfigured'});return true}
  const product=req.headers['x-sie-product'],tenantId=req.headers['x-tenant-id'],origin=req.headers.origin;
  if(!['academy','command'].includes(product)||typeof tenantId!=='string'||!UUID.test(tenantId)){reply(res,401,{code:'identity_scope_required'});return true}
  if(!origin||!authorizedOrigins.includes(origin)){reply(res,403,{code:'origin_not_allowed'});return true}
  (async()=>{
   const session=await auth.session({product,cookieHeader:req.headers.cookie||''});if(!session)throw new HttpBoundaryError('authentication_required');
   const args={tenantId,runId:match[1],identityId:session.identityId};
-  if(match[2]==='retry'){const input=await body(req);if(typeof input.idempotencyKey!=='string')throw new HttpBoundaryError('invalid_key');args.idempotencyKey=input.idempotencyKey}
-  const result=await service[match[2]](args);reply(res,200,result);
+  if(action==='retry'){const input=await body(req);if(typeof input.idempotencyKey!=='string')throw new HttpBoundaryError('invalid_key');args.idempotencyKey=input.idempotencyKey}
+  const result=await service[action](args);reply(res,200,result);
  })().catch(error=>reply(res,status(error),{code:publicCode(error)}));
  return true;
 }
