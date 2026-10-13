@@ -55,6 +55,12 @@ export class DurableJobQueue {
    if(!found.rowCount)throw new QueueError('not_found','Workflow run not found');
    return output(found.rows[0]);
  }
+ async inspect({tenantId,runId,identityId}={}){
+   requireUUID(tenantId,'tenantId');requireUUID(runId,'runId');requireUUID(identityId,'identityId');
+   const found=await this.pool.query("SELECT r.* FROM workflow_runs r JOIN memberships m ON m.tenant_id=r.tenant_id WHERE r.tenant_id=$1 AND r.id=$2 AND m.identity_id=$3",[tenantId,runId,identityId]);
+   if(!found.rowCount)throw new QueueError('not_found','Workflow run not found');
+   return output(found.rows[0]);
+ }
  async events({tenantId,runId,identityId,after=0,limit=100}={}){
    requireUUID(tenantId,'tenantId');requireUUID(runId,'runId');requireUUID(identityId,'identityId');
    if(!Number.isSafeInteger(after)||after<0)throw new QueueError('invalid_cursor','Event cursor must be a non-negative safe integer');
