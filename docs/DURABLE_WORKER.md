@@ -11,7 +11,7 @@ A real PostgreSQL queue and transactional outbox for source-controlled workflow 
 - Completing a job unlocks only its satisfied dependencies in the same database transaction. Outbox events are committed alongside job state; notification workers claim and acknowledge separately.
 - Authenticated cancellation atomically stops only local, non-dispatched work, revokes active leases and records `run.cancelled`. Any provider task ID, dispatched job or reconciliation state fails closed with `provider_cancel_unavailable`; this service does not claim a provider was cancelled.
 - Manual retry accepts a caller idempotency key, resets only zero-cost read jobs that are failed or safely cancelled, preserves succeeded dependencies and records durable retry events. Billable or provider-linked work fails closed pending explicit reconciliation.
-- Queue tables have FORCE RLS with no public grants or client policies. The future queue service runs with a dedicated trusted PostgreSQL role and server-side credentials only. User reads and controls require a separately authenticated API route; the service methods enforce tenant membership but are not mounted directly in this increment.
+- Queue tables have FORCE RLS with no public grants or client policies. The queue service uses a dedicated trusted PostgreSQL role and server-side credentials only. Injected same-origin API routes authenticate product sessions and call the same tenant/member-authorized inspection, cancellation and retry methods; they remain unconfigured by default.
 - The worker process starts only with WORKER_OPS_ENABLED=1 and WORKER_DATABASE_URL. It has no approved paid handlers in this version.
 
 ## Testing
