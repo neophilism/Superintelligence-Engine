@@ -16,3 +16,13 @@ test('fails closed for invalid cursors, origins and sessions',async t=>{
  options.auth={session:async()=>({identityId:identity})};response=await fetch(`${base}/v1/runs/${run}/events?after=unsafe`,{headers:headers(origin)});assert.equal(response.status,400);
  response=await fetch(`${base}/v1/runs/${run}/events`,{headers:headers('https://attacker.invalid')});assert.equal(response.status,403);assert.equal(calls,0);
 });
+
+test('follows delayed durable events and closes on terminal state',async t=>{
+ let calls=0;const observed=[];
+ const options={auth:{session:async()=>({identityId:identity})},service:{events:async value=>{observed.push(value.after);calls++;return calls===1?[]:[{id:43,type:'run.completed',payload:{status:'completed'},createdAt:'2026-10-13T09:45:00.000Z'}]}},authorizedOrigins:[],pollIntervalMs:0,maxFollowMs:100,wait:async()=>{}};
+ const base=await serve(t,options),origin=new URL(base).origin;options.authorizedOrigins.push(origin);
+ const response=await fetch(`${base}/v1/runs/${run}/events?follow=1`,{headers:{...headers(origin),'last-event-id':'42'}});
+ assert.equal(response.status,200);const body=await response.text();
+ assert.match(body,/: keep-alive/);assert.match(body,/id: 43\nevent: run.completed/);assert.match(body,/event: replay-end\ndata: {"cursor":43}/);
+ assert.deepEqual(observed,[42,42]);
+});
