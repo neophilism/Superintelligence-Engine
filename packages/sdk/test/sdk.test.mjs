@@ -40,3 +40,10 @@ test('SDK rejects invalid run controls and malformed run records',async()=>{
  await assert.rejects(malformed.cancelRun('unsafe',{tenantId:replayTenant,product:'command'}),TypeError);
  await assert.rejects(malformed.retryRun(replayRun,{tenantId:replayTenant,product:'command',idempotencyKey:'unsafe key'}),TypeError);
 });
+
+test('SDK opts into bounded live event follow with cursor continuity',async()=>{
+ let request;const client=new EngineClient({baseUrl:'https://engine.test',fetchImpl:async(url,options)=>{request={url:new URL(url),options};return {ok:true,headers:{get:()=> 'text/event-stream'},text:async()=> 'id: 43\nevent: run.completed\ndata: {"payload":{"status":"completed"},"createdAt":"2026-10-13T09:45:00.000Z"}\n\nevent: replay-end\ndata: {"cursor":43}\n\n'};}});
+ const result=await client.followRunEvents(replayRun,{tenantId:replayTenant,product:'command',after:42});
+ assert.equal(request.url.searchParams.get('follow'),'1');assert.equal(request.options.headers['Last-Event-ID'],'42');assert.equal(result.cursor,43);assert.equal(result.events[0].type,'run.completed');
+ await assert.rejects(client.replayRunEvents(replayRun,{tenantId:replayTenant,product:'command',follow:'yes'}),TypeError);
+});
