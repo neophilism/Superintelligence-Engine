@@ -7,3 +7,9 @@ Clients resume with the standard `Last-Event-ID` header or the `after` query par
 The endpoint is disabled unless a trusted runtime injects authentication and durable event storage. The SDK helper consumes a bounded response; it does not hold a live connection open or silently retry. Callers persist the returned cursor and explicitly request the next replay after reconnecting.
 
 This increment does not implement live notification fanout, user cancellation, idempotent retry, provider cancellation guarantees, production deployment or browser acceptance; those remain required before SIE-017 is complete.
+
+## Cancellation and retry controls
+
+A trusted runtime may inject the same authenticated queue service for `POST /v1/runs/:runId/cancel` and `POST /v1/runs/:runId/retry`. Both routes require an Academy or Command session, tenant UUID and explicitly authorized origin. Retry accepts a bounded JSON body containing `idempotencyKey`; the service enforces its safe-key format and durable replay semantics.
+
+The HTTP boundary preserves service error semantics. In particular, provider-linked or ambiguous work returns `provider_cancel_unavailable` or `retry_unsafe`; the route never reports a provider cancellation that did not occur. The boundary stays disabled unless both authentication and the durable service are injected.

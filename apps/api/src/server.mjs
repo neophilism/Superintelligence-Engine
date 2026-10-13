@@ -2,6 +2,7 @@ import {createServer} from 'node:http';
 import {projectRoute} from './project-routes.mjs';
 import {textGenerationRoute} from './text-generation-routes.mjs';
 import {runEventRoute} from './run-event-routes.mjs';
+import {runControlRoute} from './run-control-routes.mjs';
 import {authRoute} from './auth-routes.mjs';
 import {tenantRoute} from './tenant-routes.mjs';
 import {handleProductCors} from './product-cors.mjs';
@@ -21,6 +22,7 @@ export function handler(req,res,{catalog=defaultCatalog,originConfig,tenantAuth,
   if(tenantRoute(req,res,path,{...(tenantAuth?{auth:tenantAuth}:{}),...(tenantDb?{db:tenantDb}:{})}))return;
   if(textGenerationRoute(req,res,path,{auth:textGenerationAuth,service:textGenerationService,authorizedOrigins:textGenerationOrigins||(process.env.AUTHORIZED_PRODUCT_ORIGINS||'').split(',').filter(Boolean)}))return;
   if(runEventRoute(req,res,path,{auth:runEventAuth,service:runEventService,authorizedOrigins:runEventOrigins||(process.env.AUTHORIZED_PRODUCT_ORIGINS||'').split(',').filter(Boolean)}))return;
+  if(runControlRoute(req,res,path,{auth:runEventAuth,service:runEventService,authorizedOrigins:runEventOrigins||(process.env.AUTHORIZED_PRODUCT_ORIGINS||'').split(',').filter(Boolean)}))return;
   if(projectRoute(req,res,path))return;
   if(path==='/health' && req.method==='GET')return reply(200,{status:'ok',version:ENGINE_VERSION});
   if(path==='/v1/capabilities' && req.method==='GET')return reply(200,{workspaceKinds:WORKSPACE_KINDS,availableProviders:[],generationEnabled:false});
