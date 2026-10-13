@@ -20,7 +20,14 @@ test('SDK rejects unsafe scopes and malformed or incomplete replay',async()=>{
 
 test('SDK exposes explicit authenticated run controls without hidden retries',async()=>{
  const requests=[],project='00000000-0000-4000-8000-000000000004',createdAt='2026-10-13T09:00:00.000Z';
- const client=new EngineClient({baseUrl:'https://engine.test',fetchImpl:async(url,options)=>{requests.push({url:new URL(url),options});return {ok:true,json:async()=>({id:replayRun,tenantId:replayTenant,projectId:project,status:options.method==='POST'&&new URL(url).pathname.endsWith('/cancel')?'cancelled':'queued',createdAt,replayed:false})}}); 
+ const client=new EngineClient({
+  baseUrl:'https://engine.test',
+  fetchImpl:async(url,options)=>{
+   requests.push({url:new URL(url),options});
+   const status=options.method==='POST'&&new URL(url).pathname.endsWith('/cancel')?'cancelled':'queued';
+   return {ok:true,json:async()=>({id:replayRun,tenantId:replayTenant,projectId:project,status,createdAt,replayed:false})};
+  }
+ });
  assert.equal((await client.inspectRun(replayRun,{tenantId:replayTenant,product:'command'})).status,'queued');
  assert.equal((await client.cancelRun(replayRun,{tenantId:replayTenant,product:'command'})).status,'cancelled');
  await client.retryRun(replayRun,{tenantId:replayTenant,product:'command',idempotencyKey:'retry-1'});
