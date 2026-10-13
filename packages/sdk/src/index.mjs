@@ -1,4 +1,5 @@
 import {SCHEMAS} from './schemas.mjs';
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export class ApiContractError extends Error {constructor(message){super(message);this.name='ApiContractError';}}
 function check(value,schema,refPath='$'){
   if(schema?.$ref){const key=schema.$ref.split('/').at(-1);if(!SCHEMAS[key])throw new ApiContractError('Unknown schema: '+key);return check(value,SCHEMAS[key],refPath);}
@@ -11,6 +12,32 @@ function check(value,schema,refPath='$'){
   if(schema?.type==='boolean' && typeof value!=='boolean')throw new ApiContractError(refPath+': expected boolean');
   return value;
 }
+function parseRunEventReplay(text){
+  if(typeof text!=='string')throw new ApiContractError('Run event replay must be text');
+  const events=[];let cursor=null;
+  for(const block of text.split(/\r?\n\r?\n/)){
+    if(!block.trim())continue;
+    let id=null,type='message';const data=[];
+    for(const line of block.split(/\r?\n/)){
+      if(line.startsWith(':'))continue;
+      const separator=line.indexOf(':'),field=separator===-1?line:line.slice(0,separator);
+      const value=separator===-1?'':line.slice(separator+1).replace(/^ /,'');
+      if(field==='id')id=value;else if(field==='event')type=value;else if(field==='data')data.push(value);
+    }
+    let payload;try{payload=JSON.parse(data.join('\n'))}catch{throw new ApiContractError('Malformed run event data')}
+    if(type==='replay-end'){
+      if(!Number.isSafeInteger(payload?.cursor)||payload.cursor<0)throw new ApiContractError('Malformed replay cursor');
+      cursor=payload.cursor;continue;
+    }
+    const eventId=Number(id);
+    if(!Number.isSafeInteger(eventId)||eventId<1||!type)throw new ApiContractError('Malformed run event');
+    if(payload===null||typeof payload!=='object'||Array.isArray(payload)||!Object.prototype.hasOwnProperty.call(payload,'payload'))throw new ApiContractError('Malformed run event payload');
+    events.push({id:eventId,type,payload:payload.payload,createdAt:payload.createdAt});
+  }
+  if(cursor===null)throw new ApiContractError('Run event replay is incomplete');
+  if(events.some(event=>event.id>cursor))throw new ApiContractError('Replay cursor precedes an event');
+  return {events,cursor};
+}
 export function validateResponse(schemaName,value){if(!SCHEMAS[schemaName])throw new ApiContractError('Unknown contract '+schemaName);return check(value,SCHEMAS[schemaName]);}
 export class EngineClient {
   constructor({baseUrl,fetchImpl=fetch}={}) {if(!baseUrl)throw new TypeError('baseUrl required');const url=new URL(baseUrl);if(!['https:','http:'].includes(url.protocol))throw new TypeError('Unsupported URL');this.baseUrl=url.toString();this.fetchImpl=fetchImpl;}
@@ -21,4 +48,14 @@ export class EngineClient {
   }
   async health(){return this.requestValidated('GET','/health',undefined,'HealthResponse');}
   async capabilities(){return this.requestValidated('GET','/v1/capabilities',undefined,'CapabilitiesResponse');}
+  async replayRunEvents(runId,{tenantId,product,after=0,signal}={}){
+    if(typeof runId!=='string'||!UUID.test(runId))throw new TypeError('runId must be a UUID');
+    if(typeof tenantId!=='string'||!UUID.test(tenantId))throw new TypeError('tenantId must be a UUID');
+    if(!['academy','command'].includes(product))throw new TypeError('product must be academy or command');
+    if(!Number.isSafeInteger(after)||after<0)throw new TypeError('after must be a non-negative safe integer');
+    const response=await this.fetchImpl(new URL('/v1/runs/'+encodeURIComponent(runId)+'/events',this.baseUrl),{method:'GET',credentials:'include',headers:{'Accept':'text/event-stream','X-SIE-Product':product,'X-Tenant-ID':tenantId,'Last-Event-ID':String(after)},signal});
+    if(!response.ok){let code='http_error';try{const error=await response.json();code=typeof error.code==='string'?error.code:code}catch{}const error=new Error('Engine API '+response.status+': '+code);error.status=response.status;throw error}
+    if(!response.headers?.get('content-type')?.toLowerCase().startsWith('text/event-stream'))throw new ApiContractError('Expected run event stream');
+    return parseRunEventReplay(await response.text());
+  }
 }
