@@ -16,3 +16,27 @@ test('SDK rejects unsafe scopes and malformed or incomplete replay',async()=>{
  await assert.rejects(client.replayRunEvents(replayRun,{tenantId:replayTenant,product:'academy',after:-1}),TypeError);
  await assert.rejects(client.replayRunEvents(replayRun,{tenantId:replayTenant,product:'academy'}),ApiContractError);
 });
+
+
+test('SDK exposes explicit authenticated run controls without hidden retries',async()=>{
+ const requests=[],project='00000000-0000-4000-8000-000000000004',createdAt='2026-10-13T09:00:00.000Z';
+ const client=new EngineClient({
+  baseUrl:'https://engine.test',
+  fetchImpl:async(url,options)=>{
+   requests.push({url:new URL(url),options});
+   const status=options.method==='POST'&&new URL(url).pathname.endsWith('/cancel')?'cancelled':'queued';
+   return {ok:true,json:async()=>({id:replayRun,tenantId:replayTenant,projectId:project,status,createdAt,replayed:false})};
+  }
+ });
+ assert.equal((await client.inspectRun(replayRun,{tenantId:replayTenant,product:'command'})).status,'queued');
+ assert.equal((await client.cancelRun(replayRun,{tenantId:replayTenant,product:'command'})).status,'cancelled');
+ await client.retryRun(replayRun,{tenantId:replayTenant,product:'command',idempotencyKey:'retry-1'});
+ assert.deepEqual(requests.map(x=>[x.options.method,x.url.pathname]),[['GET','/v1/runs/'+replayRun],['POST','/v1/runs/'+replayRun+'/cancel'],['POST','/v1/runs/'+replayRun+'/retry']]);
+ assert.equal(JSON.parse(requests[2].options.body).idempotencyKey,'retry-1');assert.equal(requests[2].options.headers['X-Tenant-ID'],replayTenant);
+});
+test('SDK rejects invalid run controls and malformed run records',async()=>{
+ const malformed=new EngineClient({baseUrl:'https://engine.test',fetchImpl:async()=>({ok:true,json:async()=>({status:'queued'})})});
+ await assert.rejects(malformed.inspectRun(replayRun,{tenantId:replayTenant,product:'command'}),ApiContractError);
+ await assert.rejects(malformed.cancelRun('unsafe',{tenantId:replayTenant,product:'command'}),TypeError);
+ await assert.rejects(malformed.retryRun(replayRun,{tenantId:replayTenant,product:'command',idempotencyKey:'unsafe key'}),TypeError);
+});
