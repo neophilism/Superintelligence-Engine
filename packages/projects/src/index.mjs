@@ -36,6 +36,20 @@ export class ProjectService {
    return serializeProject(r.rows[0]);
   });
  }
+ async update(context,projectId,{title,kind,expectedRevision}={}){
+  secureId(projectId);
+  if(!Number.isSafeInteger(expectedRevision)||expectedRevision<1)throw new ProjectError('expected_revision_required');
+  if(title===undefined&&kind===undefined)throw new ProjectError('project_update_required');
+  const nextTitle=title===undefined?undefined:assertTitle(title);
+  if(kind!==undefined&&!WORKSPACE_KINDS.includes(kind))throw new ProjectError('unsupported_workspace_kind');
+  return this.scope(context,'member',async db=>{
+   const selected=await db.query('SELECT title,kind,current_revision FROM projects WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[context.tenantId,projectId]);
+   if(!selected.rows.length)throw new ProjectError('project_not_found',404);
+   if(Number(selected.rows[0].current_revision)!==expectedRevision)throw new ProjectError('revision_conflict',409);
+   const r=await db.query('UPDATE projects SET title=$3,kind=$4,current_revision=current_revision+1,updated_at=now() WHERE tenant_id=$1 AND id=$2 RETURNING id,title,kind,current_revision',[context.tenantId,projectId,nextTitle??selected.rows[0].title,kind??selected.rows[0].kind]);
+   return serializeProject(r.rows[0]);
+  });
+ }
  async listArtifacts(context,projectId){secureId(projectId);return this.scope(context,'viewer',async db=>{
   const project=await db.query('SELECT id FROM projects WHERE tenant_id=$1 AND id=$2',[context.tenantId,projectId]);
   if(!project.rows.length)throw new ProjectError('project_not_found',404);
