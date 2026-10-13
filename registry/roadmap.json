@@ -377,7 +377,9 @@
         "Reopen browser and reattach to ongoing/finished run with complete event history.",
         "Cancel/retry transitions do not create invalid state or duplicate billable executions."
       ],
-      "pullRequests": []
+      "pullRequests": [
+        23
+      ]
     },
     {
       "id": "SIE-018",
