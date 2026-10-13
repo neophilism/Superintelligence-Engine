@@ -68,6 +68,7 @@ export function runEventRoute(req, res, pathname, {auth, service, authorizedOrig
     let next = after;
     let closed = false;
     let unsubscribe;
+    let streamError;
 
     const close = () => {
       if (closed) return;
@@ -79,6 +80,11 @@ export function runEventRoute(req, res, pathname, {auth, service, authorizedOrig
     const emit = entry => {
       if (closed || !Number.isSafeInteger(entry?.id) || entry.id <= next) return;
       if (replaying) {
+        if (pending.length >= 200) {
+          streamError = Object.assign(new Error('run_events_unavailable'), {code: 'run_events_unavailable'});
+          close();
+          return;
+        }
         pending.push(entry);
         return;
       }
@@ -88,13 +94,17 @@ export function runEventRoute(req, res, pathname, {auth, service, authorizedOrig
 
     if (typeof service.subscribe === 'function') {
       unsubscribe = await service.subscribe({...scope, after, onEvent: emit, onError: () => {
-        if (!closed) res.end('event: error\ndata: {"code":"run_events_unavailable"}\n\n');
+        streamError = Object.assign(new Error('run_events_unavailable'), {code: 'run_events_unavailable'});
+        if (!closed && res.headersSent) res.end('event: error\ndata: {"code":"run_events_unavailable"}\n\n');
         close();
       }});
       if (closed && typeof unsubscribe === 'function') unsubscribe();
+      if (streamError) throw streamError;
     }
 
     const events = await service.events({...scope, after, limit: 200});
+    if (streamError) throw streamError;
+    if (closed) return;
     res.writeHead(200, {
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-store, no-transform',
@@ -113,6 +123,7 @@ export function runEventRoute(req, res, pathname, {auth, service, authorizedOrig
       res.end();
     }
   })().catch(error => {
+    if (res.writableEnded || res.destroyed) return;
     if (res.headersSent) res.end('event: error\ndata: {"code":"run_events_unavailable"}\n\n');
     else if (error?.code === 'authentication_required') reply(res, 401, {code: 'authentication_required'});
     else reply(res, status(error), {code: ['not_found', 'invalid_cursor', 'invalid_limit'].includes(error?.code) ? error.code : 'run_events_unavailable'});
