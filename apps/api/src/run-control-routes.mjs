@@ -29,7 +29,7 @@ export function runControlRoute(req,res,pathname,{auth,service,authorizedOrigins
  (async()=>{
   const session=await auth.session({product,cookieHeader:req.headers.cookie||''});if(!session)throw new HttpBoundaryError('authentication_required');
   const args={tenantId,runId:match[1],identityId:session.identityId};
-  if(match[2]==='retry'){const input=await body(req);args.idempotencyKey=input.idempotencyKey}
+  if(match[2]==='retry'){const input=await body(req);if(typeof input.idempotencyKey!=='string')throw new HttpBoundaryError('invalid_key');args.idempotencyKey=input.idempotencyKey}
   const result=await service[match[2]](args);reply(res,200,result);
  })().catch(error=>reply(res,status(error),{code:publicCode(error)}));
  return true;

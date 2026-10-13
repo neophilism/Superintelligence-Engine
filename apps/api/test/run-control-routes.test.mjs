@@ -17,5 +17,6 @@ test('fails closed for bad origins, sessions, bodies and provider ambiguity',asy
  response=await fetch(`${base}/v1/runs/${run}/cancel`,{method:'POST',headers:headers(origin)});assert.equal(response.status,401);
  options.auth={session:async()=>({identityId:identity})};
  response=await fetch(`${base}/v1/runs/${run}/retry`,{method:'POST',headers:{...headers(origin),'content-type':'text/plain'},body:'retry-one'});assert.equal(response.status,400);
- response=await fetch(`${base}/v1/runs/${run}/retry`,{method:'POST',headers:{...headers(origin),'content-type':'application/json'},body:'{}'});assert.equal(response.status,409);assert.equal((await response.json()).code,'provider_cancel_unavailable');
+ response=await fetch(`${base}/v1/runs/${run}/retry`,{method:'POST',headers:{...headers(origin),'content-type':'application/json'},body:'{}'});assert.equal(response.status,400);assert.equal(calls,0);
+ response=await fetch(`${base}/v1/runs/${run}/retry`,{method:'POST',headers:{...headers(origin),'content-type':'application/json'},body:JSON.stringify({idempotencyKey:'retry-one'})});assert.equal(response.status,409);assert.equal((await response.json()).code,'provider_cancel_unavailable');
 });
