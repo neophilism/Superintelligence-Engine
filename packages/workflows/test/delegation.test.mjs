@@ -24,3 +24,10 @@ test('bad identifiers and unknown audit states fail closed',()=>{
  assert.throws(()=>createDelegationScope({...valid(),taskId:'../evil'}));
  assert.throws(()=>delegationAuditEvent(createDelegationScope(valid()),{remoteTaskId:'x',state:'charged'}));
 });
+
+test('untrusted or corrupted delegation scope cannot forge audit attribution',()=>{
+ for(const scope of [{taskId:'../other',tenantId:'tenant-1',budgetCeilingMicros:1},
+ {taskId:'task-1',tenantId:'../other',budgetCeilingMicros:1},
+ {taskId:'task-1',tenantId:'tenant-1',budgetCeilingMicros:-1}])
+  assert.throws(()=>delegationAuditEvent(scope,{remoteTaskId:'remote-1',state:'submitted',atMs:1234}),TypeError);
+});

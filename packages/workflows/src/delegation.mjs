@@ -20,7 +20,9 @@ export function createDelegationScope({taskId,tenantId,callerScopes,remoteCapabi
 /** Prototype-safe, minimum audit record of a delegated task transition.
  * Not a durable append-only ledger; caller must transact in run provenance. */
 export function delegationAuditEvent(scope,{remoteTaskId,state,atMs=Date.now()}={}) {
-  if(!scope||typeof scope!=='object'||!ID.test(remoteTaskId||'')||
+  if(!scope||typeof scope!=='object'||!ID.test(scope.taskId||'')||
+     !ID.test(scope.tenantId||'')||!Number.isSafeInteger(scope.budgetCeilingMicros)||
+     scope.budgetCeilingMicros<0||!ID.test(remoteTaskId||'')||
      !['submitted','running','completed','failed','cancelled'].includes(state)||
      !Number.isSafeInteger(atMs))fail();
   return Object.freeze({taskId:scope.taskId,tenantId:scope.tenantId,
