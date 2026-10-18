@@ -1,4 +1,4 @@
-import {createHash} from 'node:crypto';
+import {createHash,createHmac} from 'node:crypto';
 import {verifyProviderCallback} from './callbacks.mjs';
 const ID=/^[A-Za-z0-9_-]{1,128}$/,PROVIDER=/^[a-z][a-z0-9-]{1,63}$/,UUID=/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const terminal=new Set(['completed','failed','cancelled']);
@@ -7,7 +7,7 @@ function check(v,re){if(typeof v!=='string'||!re.test(v))fail('invalid_identity'
 async function tx(pool,fn){const db=await pool.connect();try{await db.query('BEGIN');try{const r=await fn(db);await db.query('COMMIT');return r}catch(e){await db.query('ROLLBACK');throw e}}finally{db.release()}}
 const view=r=>({id:r.id,providerId:r.provider_id,providerTaskId:r.provider_task_id,modality:r.modality,state:r.state,output:r.output,rights:r.rights,actualMicrounits:r.actual_micro===null?null:Number(r.actual_micro)});
 export class MediaLifecycle {
- constructor({pool,secrets,clock=()=>Date.now()}={}){if(!pool?.connect||typeof secrets!=='function')throw new TypeError('Trusted pool and secret resolver required');this.pool=pool;this.secrets=secrets;this.clock=clock}
+ constructor({pool,secrets,adapters,clock=()=>Date.now()}={}){if(!pool?.connect||typeof secrets!=='function')throw new TypeError('Trusted pool and secret resolver required');this.pool=pool;this.secrets=secrets;this.adapters=adapters;this.clock=clock}
  async register({tenantId,providerId,providerTaskId,modality,reservationId}){
   check(tenantId,UUID);check(reservationId,UUID);check(providerId,PROVIDER);check(providerTaskId,ID);
   if(!['image','music','video'].includes(modality))fail('invalid_modality');
@@ -24,6 +24,19 @@ export class MediaLifecycle {
   check(tenantId,UUID);check(identityId,UUID);check(providerId,PROVIDER);check(providerTaskId,ID);
   const task=(await this.pool.query('SELECT t.* FROM media_tasks t JOIN memberships m ON m.tenant_id=t.tenant_id WHERE t.tenant_id=$1 AND t.provider_id=$2 AND t.provider_task_id=$3 AND m.identity_id=$4',[tenantId,providerId,providerTaskId,identityId])).rows[0];
   if(!task)fail('not_found');return view(task);
+ }
+ async poll({tenantId,identityId,providerId,providerTaskId}){
+  await this.status({tenantId,identityId,providerId,providerTaskId});
+  if(!this.adapters?.poll)fail('poll_unconfigured');
+  const receipt=await this.adapters.poll({providerId,providerTaskId});
+  if(receipt.providerTaskId!==providerTaskId)fail('task_conflict');
+  const digest=createHash('sha256').update(JSON.stringify(receipt)).digest('hex');
+  const event={...receipt,providerTaskId,callbackId:'poll_'+digest.slice(0,64)};
+  const body=Buffer.from(JSON.stringify(event));
+  const timestamp=String(Math.floor(this.clock()/1000));
+  const secret=await this.secrets(providerId);
+  const signature='sha256='+createHmac('sha256',secret).update(timestamp).update('.').update(body).digest('hex');
+  return this.receive({providerId,body,timestamp,signature});
  }
  async receive({providerId,body,timestamp,signature}){
   check(providerId,PROVIDER);
