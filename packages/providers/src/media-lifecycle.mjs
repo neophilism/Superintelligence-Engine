@@ -34,10 +34,15 @@ export class MediaLifecycle {
   check(tenantId,UUID);check(reservationId,UUID);check(providerId,PROVIDER);check(dispatchKey,ID);
   if(!['image','music','video'].includes(modality))fail('invalid_modality');
   if(!this.adapters?.submit)fail('submit_unconfigured');
+  const requestDigest=createHash('sha256').update(JSON.stringify([operation,region,commercial,input,options])).digest('hex');
   const prior=await tx(this.pool,async db=>{
-   const inserted=await db.query('INSERT INTO media_dispatches(tenant_id,dispatch_key,provider_id,modality,reservation_id) VALUES($1,$2,$3,$4,$5) ON CONFLICT(tenant_id,dispatch_key) DO NOTHING RETURNING *',[tenantId,dispatchKey,providerId,modality,reservationId]);
+   const existing=(await db.query('SELECT * FROM media_dispatches WHERE tenant_id=$1 AND dispatch_key=$2 FOR UPDATE',[tenantId,dispatchKey])).rows[0];
+   if(existing){if(existing.provider_id!==providerId||existing.modality!==modality||existing.reservation_id!==reservationId||existing.request_digest!==requestDigest)fail('dispatch_conflict');return {fresh:false}}
+   const reservation=(await db.query('SELECT status FROM budget_reservations WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[tenantId,reservationId])).rows[0];
+   if(!reservation||reservation.status!== 'reserved')fail('reservation_inactive');
+   const inserted=await db.query('INSERT INTO media_dispatches(tenant_id,dispatch_key,provider_id,modality,reservation_id,request_digest) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(tenant_id,dispatch_key) DO NOTHING RETURNING *',[tenantId,dispatchKey,providerId,modality,reservationId,requestDigest]);
    const row=inserted.rows[0]||(await db.query('SELECT * FROM media_dispatches WHERE tenant_id=$1 AND dispatch_key=$2 FOR UPDATE',[tenantId,dispatchKey])).rows[0];
-   if(row.provider_id!==providerId||row.modality!==modality||row.reservation_id!==reservationId)fail('dispatch_conflict');
+   if(row.provider_id!==providerId||row.modality!==modality||row.reservation_id!==reservationId||row.request_digest!==requestDigest)fail('dispatch_conflict');
    return {fresh:Boolean(inserted.rows[0])};
   });
   if(!prior.fresh){
