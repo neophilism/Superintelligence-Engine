@@ -19,3 +19,17 @@ ALTER TABLE media_tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_tasks FORCE ROW LEVEL SECURITY;
 ALTER TABLE media_callbacks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_callbacks FORCE ROW LEVEL SECURITY;
+CREATE TABLE media_dispatches (
+ tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+ dispatch_key text NOT NULL CHECK(length(dispatch_key) BETWEEN 1 AND 128),
+ provider_id text NOT NULL,modality text NOT NULL CHECK(modality IN ('image','music','video')),
+ reservation_id uuid NOT NULL,
+ state text NOT NULL DEFAULT 'started' CHECK(state IN ('started','registered')),
+ provider_task_id text,created_at timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY(tenant_id,dispatch_key),
+ UNIQUE(tenant_id,reservation_id),
+ FOREIGN KEY(tenant_id,reservation_id) REFERENCES budget_reservations(tenant_id,id)
+);
+REVOKE ALL ON media_dispatches FROM PUBLIC;
+ALTER TABLE media_dispatches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE media_dispatches FORCE ROW LEVEL SECURITY;

@@ -30,6 +30,28 @@ export class MediaLifecycle {
   const task=(await this.pool.query('SELECT t.* FROM media_tasks t JOIN memberships m ON m.tenant_id=t.tenant_id WHERE t.tenant_id=$1 AND t.provider_id=$2 AND t.provider_task_id=$3 AND m.identity_id=$4',[tenantId,providerId,providerTaskId,identityId])).rows[0];
   if(!task)fail('not_found');return view(task);
  }
+ async submit({tenantId,providerId,modality,reservationId,dispatchKey,operation,region,commercial=false,input,options={}}){
+  check(tenantId,UUID);check(reservationId,UUID);check(providerId,PROVIDER);check(dispatchKey,ID);
+  if(!['image','music','video'].includes(modality))fail('invalid_modality');
+  if(!this.adapters?.submit)fail('submit_unconfigured');
+  const prior=await tx(this.pool,async db=>{
+   const inserted=await db.query('INSERT INTO media_dispatches(tenant_id,dispatch_key,provider_id,modality,reservation_id) VALUES($1,$2,$3,$4,$5) ON CONFLICT(tenant_id,dispatch_key) DO NOTHING RETURNING *',[tenantId,dispatchKey,providerId,modality,reservationId]);
+   const row=inserted.rows[0]||(await db.query('SELECT * FROM media_dispatches WHERE tenant_id=$1 AND dispatch_key=$2 FOR UPDATE',[tenantId,dispatchKey])).rows[0];
+   if(row.provider_id!==providerId||row.modality!==modality||row.reservation_id!==reservationId)fail('dispatch_conflict');
+   return {fresh:Boolean(inserted.rows[0])};
+  });
+  if(!prior.fresh){
+   const existing=(await this.pool.query('SELECT * FROM media_tasks WHERE tenant_id=$1 AND reservation_id=$2',[tenantId,reservationId])).rows[0];
+   if(existing)return view(existing);
+   fail('dispatch_uncertain');
+  }
+  // The durable started row fences retries after an ambiguous external effect.
+  const receipt=await this.adapters.submit({tenantId,providerId,operation,region,commercial,reservationId,input,
+   options:{...options,idempotencyKey:dispatchKey}});
+  const task=await this.register({tenantId,providerId,providerTaskId:receipt.providerTaskId,modality,reservationId});
+  await this.pool.query("UPDATE media_dispatches SET state='registered',provider_task_id=$3 WHERE tenant_id=$1 AND dispatch_key=$2",[tenantId,dispatchKey,receipt.providerTaskId]);
+  return task;
+ }
  async poll({tenantId,identityId,providerId,providerTaskId}){
   await this.status({tenantId,identityId,providerId,providerTaskId});
   if(!this.adapters?.poll)fail('poll_unconfigured');
