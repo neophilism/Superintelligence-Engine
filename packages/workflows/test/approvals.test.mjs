@@ -26,3 +26,9 @@ test('failed sensitive work must renew human approval before retry',()=>{
  assert.throws(()=>workflowTransition(s,'start',{expectedVersion:5}));
  assert.throws(()=>workflowTransition(s,'approve',{expectedVersion:4,actorRole:'approver'}));
 });
+
+test('unknown effect cannot bypass sensitive approval through optimistic default',()=>{
+ for(const effect of ['transfer_funds','publish_public','',null])
+  assert.throws(()=>workflowTransition(state(effect),'start',{expectedVersion:0}),TypeError);
+ assert.equal(workflowTransition(state('read'),'start',{expectedVersion:0}).state,'running');
+});
