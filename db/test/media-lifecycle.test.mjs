@@ -27,7 +27,8 @@ test('signed callbacks settle a single durable result despite replays, reordered
   const complete=callback('complete','completed',{actualMicrounits:27,output:{key:'private/object'},rights:{scope:'personal'}});
   const send=(body,signature=sign(body))=>service().receive({providerId,body,timestamp,signature});
   await assert.rejects(send(complete,'sha256='+'0'.repeat(64)),e=>e.code==='invalid_signature');
-  const result=await send(complete);assert.equal(result.state,'completed');assert.equal(result.actualMicrounits,27);
+  const result=await send(complete);assert.equal(result.state,'completed');
+  assert.equal((await service().register({tenantId,providerId,providerTaskId,modality:'image',reservationId:reservation.id})).state,'completed');assert.equal(result.actualMicrounits,27);
   const [duplicate,late,failure]=await Promise.all([
    send(complete),send(callback('late-progress','running')),send(callback('late-failure','failed'))
   ]);
@@ -40,5 +41,27 @@ test('signed callbacks settle a single durable result despite replays, reordered
   assert.equal(Number(counts.rows[0].n),1);
   const balance=await pool.query('SELECT status,charged_micro,provider_task_id FROM budget_reservations WHERE id=$1',[reservation.id]);
   assert.deepEqual(balance.rows[0],{status:'settled',charged_micro:'27',provider_task_id:providerTaskId});
+ }finally{await pool.end()}
+});
+
+test('polling reconciles a terminal receipt and only the bound tenant member may read it',{skip:!url},async()=>{
+ const pool=new pg.Pool({connectionString:url,max:4}),secret='p'.repeat(40);
+ try{
+  const tenant=(await pool.query("INSERT INTO tenants(name) VALUES('Poll lifecycle test') RETURNING id")).rows[0].id;
+  const identity=(await pool.query("INSERT INTO identities(issuer,subject) VALUES('media-poll',gen_random_uuid()::text) RETURNING id")).rows[0].id;
+  await pool.query("INSERT INTO memberships(tenant_id,identity_id,role) VALUES($1,$2,'owner')",[tenant,identity]);
+  await pool.query('UPDATE budget_global SET hard_limit_micro=GREATEST(hard_limit_micro,spent_micro+reserved_micro+1000) WHERE singleton=1');
+  await pool.query('INSERT INTO budget_accounts(tenant_id,funded_micro,hard_limit_micro) VALUES($1,50,50)',[tenant]);
+  const reservation=await new BudgetLedger({pool}).reserve({tenantId:tenant,idempotencyKey:randomUUID(),maximumMicrounits:20});
+  const providerTaskId='task_'+randomUUID().replaceAll('-',''),providerId='poll-media';
+  const service=new MediaLifecycle({pool,secrets:async()=>secret,adapters:{poll:async()=>({providerTaskId,state:'completed',actualMicrounits:8,output:{key:'asset'},rights:{scope:'personal'}})}});
+  await service.register({tenantId:tenant,providerId,providerTaskId,modality:'music',reservationId:reservation.id});
+  const args={tenantId:tenant,identityId:identity,providerId,providerTaskId};
+  await assert.rejects(service.poll({...args,identityId:'00000000-0000-4000-8000-000000000001'}),e=>e.code==='not_found');
+  assert.equal((await service.poll(args)).state,'completed');
+  assert.equal((await service.poll(args)).replayed,true);
+  assert.equal((await service.status(args)).actualMicrounits,8);
+  const count=await pool.query("SELECT count(*) AS n FROM budget_events WHERE reservation_id=$1 AND event_type='settle'",[reservation.id]);
+  assert.equal(Number(count.rows[0].n),1);
  }finally{await pool.end()}
 });

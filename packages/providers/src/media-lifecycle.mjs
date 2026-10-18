@@ -12,6 +12,11 @@ export class MediaLifecycle {
   check(tenantId,UUID);check(reservationId,UUID);check(providerId,PROVIDER);check(providerTaskId,ID);
   if(!['image','music','video'].includes(modality))fail('invalid_modality');
   return tx(this.pool,async db=>{
+   const existing=(await db.query('SELECT * FROM media_tasks WHERE provider_id=$1 AND provider_task_id=$2',[providerId,providerTaskId])).rows[0];
+   if(existing){
+    if(existing.tenant_id!==tenantId||existing.reservation_id!==reservationId||existing.modality!==modality)fail('task_conflict');
+    return view(existing);
+   }
    const reservation=(await db.query('SELECT status FROM budget_reservations WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[tenantId,reservationId])).rows[0];
    if(!reservation||reservation.status!=='reserved')fail('reservation_inactive');
    const inserted=await db.query('INSERT INTO media_tasks(tenant_id,provider_id,provider_task_id,modality,reservation_id) VALUES($1,$2,$3,$4,$5) ON CONFLICT(provider_id,provider_task_id) DO NOTHING RETURNING *',[tenantId,providerId,providerTaskId,modality,reservationId]);
