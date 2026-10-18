@@ -20,9 +20,9 @@ export class MediaLifecycle {
    return view(task);
   });
  }
- async status({tenantId,providerId,providerTaskId}){
-  check(tenantId,UUID);check(providerId,PROVIDER);check(providerTaskId,ID);
-  const task=(await this.pool.query('SELECT * FROM media_tasks WHERE tenant_id=$1 AND provider_id=$2 AND provider_task_id=$3',[tenantId,providerId,providerTaskId])).rows[0];
+ async status({tenantId,identityId,providerId,providerTaskId}){
+  check(tenantId,UUID);check(identityId,UUID);check(providerId,PROVIDER);check(providerTaskId,ID);
+  const task=(await this.pool.query('SELECT t.* FROM media_tasks t JOIN memberships m ON m.tenant_id=t.tenant_id WHERE t.tenant_id=$1 AND t.provider_id=$2 AND t.provider_task_id=$3 AND m.identity_id=$4',[tenantId,providerId,providerTaskId,identityId])).rows[0];
   if(!task)fail('not_found');return view(task);
  }
  async receive({providerId,body,timestamp,signature}){

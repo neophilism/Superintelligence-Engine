@@ -11,6 +11,8 @@ test('signed callbacks settle a single durable result despite replays, reordered
  const sign=body=>'sha256='+createHmac('sha256',secret).update(timestamp).update('.').update(body).digest('hex');
  try{
   const tenant=(await pool.query("INSERT INTO tenants(name) VALUES('Media lifecycle test') RETURNING id")).rows[0].id;
+  const identity=(await pool.query("INSERT INTO identities(issuer,subject) VALUES('media-test',gen_random_uuid()::text) RETURNING id")).rows[0].id;
+  await pool.query("INSERT INTO memberships(tenant_id,identity_id,role) VALUES($1,$2,'owner')",[tenant,identity]);
   await pool.query('UPDATE budget_global SET hard_limit_micro=GREATEST(hard_limit_micro,spent_micro+reserved_micro+1000) WHERE singleton=1');
   await pool.query('INSERT INTO budget_accounts(tenant_id,funded_micro,hard_limit_micro) VALUES($1,100,100)',[tenant]);
   const reservation=await new BudgetLedger({pool}).reserve({tenantId:tenant,idempotencyKey:randomUUID(),maximumMicrounits:50});
@@ -30,8 +32,8 @@ test('signed callbacks settle a single durable result despite replays, reordered
    send(complete),send(callback('late-progress','running')),send(callback('late-failure','failed'))
   ]);
   assert.equal(duplicate.replayed,true);assert.equal(late.ignored,true);assert.equal(failure.ignored,true);
-  assert.equal((await service().status({tenantId,providerId,providerTaskId})).state,'completed');
-  await assert.rejects(service().status({tenantId:'00000000-0000-4000-8000-000000000001',providerId,providerTaskId}),e=>e.code==='not_found');
+  assert.equal((await service().status({tenantId,identityId:identity,providerId,providerTaskId})).state,'completed');
+  await assert.rejects(service().status({tenantId:'00000000-0000-4000-8000-000000000001',identityId:identity,providerId,providerTaskId}),e=>e.code==='not_found');
   const conflicting=callback('complete','completed',{actualMicrounits:1,output:{},rights:{}});
   await assert.rejects(send(conflicting),e=>e.code==='callback_conflict');
   const counts=await pool.query("SELECT count(*) AS n FROM budget_events WHERE reservation_id=$1 AND event_type='settle'",[reservation.id]);
