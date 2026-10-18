@@ -26,3 +26,10 @@ test('invalid callbacks and cross-task substitution fail closed',()=>{
  assert.throws(()=>reconcileProviderEvents(initial,{callbackId:'b',providerTaskId:'task-2',state:'completed'}));
  assert.throws(()=>reconcileProviderEvents(initial,{callbackId:'!',providerTaskId:'task-1',state:'completed'}));
 });
+
+test('malformed prior reducer state fails closed',()=>{
+ const event={callbackId:'new',providerTaskId:'task-1',state:'completed'};
+ for(const prior of [{providerTaskId:'task-1',state:'unknown',seenIds:[]},
+ {providerTaskId:'task-1',state:'running',seenIds:[7]}])
+  assert.throws(()=>reconcileProviderEvents(prior,event),TypeError);
+});

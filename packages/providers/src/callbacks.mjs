@@ -22,7 +22,10 @@ export function reconcileProviderEvents(previous,event) {
       typeof event.providerTaskId!=='string'||!/^[a-zA-Z0-9_-]{1,128}$/.test(event.providerTaskId))
     throw new TypeError('Malformed provider event');
   const old=previous||{state:'queued',providerTaskId:event.providerTaskId,seenIds:[]};
-  if(old.providerTaskId!==event.providerTaskId||!Array.isArray(old.seenIds))throw new TypeError('Provider task mismatch');
+  if(old.providerTaskId!==event.providerTaskId||!Array.isArray(old.seenIds)||
+      !['queued','running','completed','failed','cancelled'].includes(old.state)||
+      old.seenIds.some(id=>typeof id!=='string'||!/^[a-zA-Z0-9_-]{1,128}$/.test(id)))
+    throw new TypeError('Malformed prior provider state');
   if(old.seenIds.includes(event.callbackId))return Object.freeze({...old,seenIds:Object.freeze([...old.seenIds])});
   const terminal=['completed','failed','cancelled'];
   const nextState=terminal.includes(old.state)?old.state:
