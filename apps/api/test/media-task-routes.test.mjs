@@ -4,7 +4,7 @@ import {makeServer} from '../src/server.mjs';
 const tenantId='10000000-0000-4000-8000-000000000001',identityId='20000000-0000-4000-8000-000000000002';
 test('media task status and polling require session, origin and tenant member scope',async()=>{
  const calls=[];
- const server=makeServer({mediaAuth:{session:async({cookieHeader})=>cookieHeader==='session=yes'?{identityId}:null},
+ const server=makeServer({originConfig:{academy:'https://academy.example',command:'https://command.example'},mediaAuth:{session:async({cookieHeader})=>cookieHeader==='session=yes'?{identityId}:null},
   mediaOrigins:['https://academy.example'],mediaLifecycle:{
    status:async args=>{calls.push(['status',args]);return {state:'running'}},
    poll:async args=>{calls.push(['poll',args]);return {state:'completed'}}
