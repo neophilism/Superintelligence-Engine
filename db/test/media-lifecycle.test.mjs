@@ -65,3 +65,27 @@ test('polling reconciles a terminal receipt and only the bound tenant member may
   assert.equal(Number(count.rows[0].n),1);
  }finally{await pool.end()}
 });
+
+test('durable dispatch intent prevents a second billable submit after ambiguity',{skip:!url},async()=>{
+ const pool=new pg.Pool({connectionString:url,max:4});
+ try{
+  const tenantId=(await pool.query("INSERT INTO tenants(name) VALUES('Dispatch lifecycle test') RETURNING id")).rows[0].id;
+  await pool.query('UPDATE budget_global SET hard_limit_micro=GREATEST(hard_limit_micro,spent_micro+reserved_micro+1000) WHERE singleton=1');
+  await pool.query('INSERT INTO budget_accounts(tenant_id,funded_micro,hard_limit_micro) VALUES($1,50,50)',[tenantId]);
+  const ledger=new BudgetLedger({pool}),reservation=await ledger.reserve({tenantId,idempotencyKey:randomUUID(),maximumMicrounits:20});
+  const providerId='submit-media',providerTaskId='task_'+randomUUID().replaceAll('-',''),dispatchKey='dispatch_'+randomUUID().replaceAll('-','');
+  let calls=0;
+  const service=new MediaLifecycle({pool,secrets:async()=> 'x'.repeat(40),adapters:{submit:async request=>{calls++;assert.equal(request.options.idempotencyKey,dispatchKey);return {providerTaskId,state:'queued'}}}});
+  const args={tenantId,providerId,providerTaskId,modality:'video',reservationId:reservation.id,dispatchKey,operation:'video.generate',region:'us',input:{prompt:'scene'}};
+  const first=await service.submit(args);assert.equal(first.providerTaskId,providerTaskId);
+  assert.equal((await service.submit(args)).id,first.id);assert.equal(calls,1);
+  await assert.rejects(service.submit({...args,input:{prompt:'different'}}),e=>e.code==='dispatch_conflict');
+  const other=await ledger.reserve({tenantId,idempotencyKey:randomUUID(),maximumMicrounits:20});
+  const uncertainKey='uncertain_'+randomUUID().replaceAll('-','');
+  const uncertain=new MediaLifecycle({pool,secrets:async()=> 'x'.repeat(40),adapters:{submit:async()=>{calls++;throw new Error('provider timeout')}}});
+  const uncertainArgs={...args,reservationId:other.id,dispatchKey:uncertainKey};
+  await assert.rejects(uncertain.submit(uncertainArgs),/provider timeout/);
+  await assert.rejects(uncertain.submit(uncertainArgs),e=>e.code==='dispatch_uncertain');
+  assert.equal(calls,2);
+ }finally{await pool.end()}
+});
