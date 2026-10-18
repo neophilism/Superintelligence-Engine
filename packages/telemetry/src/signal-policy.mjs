@@ -1,10 +1,13 @@
 const CATEGORIES=new Set(['api','worker','provider','storage','ledger']);
 const KINDS=new Set(['latency','error','spend','dead_letter']);
 const fail=()=>{throw new TypeError('Invalid service signal')};
+const plainData=input=>Object.getPrototypeOf(input)===Object.prototype&&
+  Object.values(Object.getOwnPropertyDescriptors(input)).every(descriptor=>Object.hasOwn(descriptor,'value'));
+
 /** Fixed-label policy: no prompts, tenant identities or credentials in labels. */
 export function evaluateOperationalSignal(input) {
  if(!input||typeof input!=='object'||Array.isArray(input)||
-   Object.keys(input).sort().join(',')!=='category,kind,threshold,value'|| 
+   (!plainData(input)||Object.keys(input).sort().join(','))!=='category,kind,threshold,value'|| 
    !CATEGORIES.has(input.category)||!KINDS.has(input.kind)||
    !Number.isFinite(input.value)||input.value<0||
    !Number.isFinite(input.threshold)||input.threshold<=0)fail();
@@ -15,7 +18,7 @@ export function evaluateOperationalSignal(input) {
 }
 export function redactCorrelation(input) {
  if(!input||typeof input!=='object'||Array.isArray(input)||
-  Object.keys(input).some(x=>!['traceId','spanId','service','event'].includes(x))||
+  (!plainData(input)||Object.keys(input).some(x=>!['traceId','spanId','service','event'].includes(x)))||
   typeof input.traceId!=='string'||!/^[0-9a-f]{32}$/.test(input.traceId)||
   typeof input.spanId!=='string'||!/^[0-9a-f]{16}$/.test(input.spanId)||
   !CATEGORIES.has(input.service)||typeof input.event!=='string'||

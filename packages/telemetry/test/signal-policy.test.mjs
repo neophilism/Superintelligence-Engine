@@ -13,3 +13,13 @@ test('prompt, identity and secret fields are rejected, not logged',()=>{
  assert.deepEqual(Object.keys(redactCorrelation(span)),['traceId','spanId','service','event']);
  assert.throws(()=>redactCorrelation({...span,token:'secret'}));
 });
+
+test('accessor and inherited telemetry properties are rejected without reading getters',()=>{
+ const fields={category:'api',kind:'error',threshold:1,value:2};
+ const signal={...fields};Object.defineProperty(signal,'value',{enumerable:true,get(){throw Error('getter executed')}});
+ assert.throws(()=>evaluateOperationalSignal(signal),TypeError);
+ assert.throws(()=>evaluateOperationalSignal(Object.assign(Object.create({secret:1}),fields)),TypeError);
+ const span={traceId:'a'.repeat(32),spanId:'b'.repeat(16),service:'api',event:'job_failed'};
+ Object.defineProperty(span,'event',{enumerable:true,get(){throw Error('getter executed')}});
+ assert.throws(()=>redactCorrelation(span),TypeError);
+});
