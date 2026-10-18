@@ -7,7 +7,7 @@ CREATE TABLE media_tasks (
  state text NOT NULL DEFAULT 'queued' CHECK(state IN ('queued','running','completed','failed','cancelled')),
  output jsonb,rights jsonb,actual_micro bigint CHECK(actual_micro>=0),
  created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now(),
- UNIQUE(provider_id,provider_task_id),UNIQUE(tenant_id,reservation_id),
+ UNIQUE(provider_id,provider_task_id),UNIQUE(tenant_id,reservation_id),UNIQUE(tenant_id,id),
  FOREIGN KEY(tenant_id,reservation_id) REFERENCES budget_reservations(tenant_id,id)
 );
 CREATE TABLE media_callbacks (
@@ -42,3 +42,12 @@ ALTER TABLE media_dispatches FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON media_dispatches FROM PUBLIC;
 ALTER TABLE media_dispatches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_dispatches FORCE ROW LEVEL SECURITY;
+CREATE TABLE media_task_assets (
+ tenant_id uuid NOT NULL,task_id uuid NOT NULL,asset_id uuid NOT NULL,
+ PRIMARY KEY(task_id,asset_id),
+ FOREIGN KEY(tenant_id,task_id) REFERENCES media_tasks(tenant_id,id) ON DELETE CASCADE,
+ FOREIGN KEY(tenant_id,asset_id) REFERENCES asset_metadata(tenant_id,id)
+);
+REVOKE ALL ON media_task_assets FROM PUBLIC;
+ALTER TABLE media_task_assets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE media_task_assets FORCE ROW LEVEL SECURITY;

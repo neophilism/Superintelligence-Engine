@@ -78,7 +78,16 @@ export class MediaLifecycle {
   if(!event||typeof event!=='object'||Array.isArray(event))fail('invalid_callback');
   check(event.callbackId,ID);check(event.providerTaskId,ID);
   if(!['queued','running',...terminal].includes(event.state))fail('invalid_callback');
-  if(event.state==='completed'&&(!Number.isSafeInteger(event.actualMicrounits)||event.actualMicrounits<0||!event.output||typeof event.output!=='object'||Array.isArray(event.output)||!event.rights||typeof event.rights!=='object'||Array.isArray(event.rights)))fail('invalid_result');
+  if(event.state==='completed'&&(!Number.isSafeInteger(event.actualMicrounits)||event.actualMicrounits<0||
+   !event.output||typeof event.output!=='object'||Array.isArray(event.output)||
+   Object.keys(event.output).some(k=>k!=='assetIds')||!Array.isArray(event.output.assetIds)||
+   event.output.assetIds.length<1||event.output.assetIds.length>50||
+   event.output.assetIds.some(x=>typeof x!=='string'||!UUID.test(x))||
+   new Set(event.output.assetIds).size!==event.output.assetIds.length||
+   !event.rights||typeof event.rights!=='object'||Array.isArray(event.rights)||
+   !['personal','commercial'].includes(event.rights.scope)||
+   typeof event.rights.license!=='string'||event.rights.license.length<1||event.rights.license.length>256))
+   fail('invalid_result');
   const digest=createHash('sha256').update(body).digest('hex');
   return tx(this.pool,async db=>{
    const task=(await db.query('SELECT * FROM media_tasks WHERE provider_id=$1 AND provider_task_id=$2 FOR UPDATE',[providerId,event.providerTaskId])).rows[0];
@@ -95,6 +104,11 @@ export class MediaLifecycle {
    const account=(await db.query('SELECT * FROM budget_accounts WHERE tenant_id=$1 FOR UPDATE',[task.tenant_id])).rows[0];
    const reservation=(await db.query('SELECT * FROM budget_reservations WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[task.tenant_id,task.reservation_id])).rows[0];
    if(!global||!account||!reservation||reservation.status!=='reserved')fail('reservation_inactive');
+   if(event.state==='completed'){
+    const assets=await db.query("SELECT id FROM asset_metadata WHERE tenant_id=$1 AND id=ANY($2::uuid[]) AND scan_state='clean' FOR SHARE",[task.tenant_id,event.output.assetIds]);
+    if(assets.rows.length!==event.output.assetIds.length)fail('asset_unavailable');
+    for(const assetId of event.output.assetIds)await db.query('INSERT INTO media_task_assets(tenant_id,task_id,asset_id) VALUES($1,$2,$3)',[task.tenant_id,task.id,assetId]);
+   }
    const charge=BigInt(event.state==='completed'?event.actualMicrounits:0),reserved=BigInt(reservation.reserved_micro);
    if(charge>reserved)fail('reservation_limit_exceeded');
    await db.query('UPDATE budget_global SET reserved_micro=reserved_micro-$1,spent_micro=spent_micro+$2 WHERE singleton=1',[String(reserved),String(charge)]);
