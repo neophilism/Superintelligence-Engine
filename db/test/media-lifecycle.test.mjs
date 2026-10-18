@@ -19,21 +19,21 @@ test('signed callbacks settle a single durable result despite replays, reordered
   const providerTaskId='task_'+randomUUID().replaceAll('-','');
   const providerId='mock-media';
   const service=()=>new MediaLifecycle({pool,secrets:async id=>{assert.equal(id,providerId);return secret}});
-  const initial=await service().register({tenantId,providerId,providerTaskId,modality:'image',reservationId:reservation.id});
+  const initial=await service().register({tenantId:tenant,providerId,providerTaskId,modality:'image',reservationId:reservation.id});
   assert.equal(initial.state,'queued');
-  assert.equal((await service().register({tenantId,providerId,providerTaskId,modality:'image',reservationId:reservation.id})).id,initial.id);
-  await assert.rejects(service().register({tenantId,providerId,providerTaskId,modality:'music',reservationId:reservation.id}),e=>e.code==='task_conflict');
+  assert.equal((await service().register({tenantId:tenant,providerId,providerTaskId,modality:'image',reservationId:reservation.id})).id,initial.id);
+  await assert.rejects(service().register({tenantId:tenant,providerId,providerTaskId,modality:'music',reservationId:reservation.id}),e=>e.code==='task_conflict');
   const callback=(callbackId,state,extra={})=>Buffer.from(JSON.stringify({callbackId,providerTaskId,state,...extra}));
   const complete=callback('complete','completed',{actualMicrounits:27,output:{key:'private/object'},rights:{scope:'personal'}});
   const send=(body,signature=sign(body))=>service().receive({providerId,body,timestamp,signature});
   await assert.rejects(send(complete,'sha256='+'0'.repeat(64)),e=>e.code==='invalid_signature');
   const result=await send(complete);assert.equal(result.state,'completed');
-  assert.equal((await service().register({tenantId,providerId,providerTaskId,modality:'image',reservationId:reservation.id})).state,'completed');assert.equal(result.actualMicrounits,27);
+  assert.equal((await service().register({tenantId:tenant,providerId,providerTaskId,modality:'image',reservationId:reservation.id})).state,'completed');assert.equal(result.actualMicrounits,27);
   const [duplicate,late,failure]=await Promise.all([
    send(complete),send(callback('late-progress','running')),send(callback('late-failure','failed'))
   ]);
   assert.equal(duplicate.replayed,true);assert.equal(late.ignored,true);assert.equal(failure.ignored,true);
-  assert.equal((await service().status({tenantId,identityId:identity,providerId,providerTaskId})).state,'completed');
+  assert.equal((await service().status({tenantId:tenant,identityId:identity,providerId,providerTaskId})).state,'completed');
   await assert.rejects(service().status({tenantId:'00000000-0000-4000-8000-000000000001',identityId:identity,providerId,providerTaskId}),e=>e.code==='not_found');
   const conflicting=callback('complete','completed',{actualMicrounits:1,output:{},rights:{}});
   await assert.rejects(send(conflicting),e=>e.code==='callback_conflict');
